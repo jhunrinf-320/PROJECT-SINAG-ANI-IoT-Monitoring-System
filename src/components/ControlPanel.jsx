@@ -6,10 +6,8 @@ from "firebase/database";
 
 
 import {
-database
-}
-from "../firebase/firebaseConfig";
-
+  database 
+} from "../firebase/firebaseConfig.js";
 
 
 function ControlPanel(){
