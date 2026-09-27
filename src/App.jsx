@@ -10,9 +10,9 @@ import {
 } from "firebase/database";
 
 
-import {
-  database
-} from "./firebase/firebaseConfig";
+ import { 
+  database 
+} from "./firebase/firebaseConfig.js";
 
 
 import Sidebar from "./components/Sidebar";
