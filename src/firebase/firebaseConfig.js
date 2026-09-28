@@ -3,7 +3,6 @@ import { getDatabase } from "firebase/database";
 import {
   getAuth,
   signInAnonymously,
-  onAuthStateChanged,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -18,43 +17,21 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL",
 };
 
-const app = initializeApp(firebaseConfig);
+const firebaseApp = initializeApp(firebaseConfig);
 
-const auth = getAuth(app);
+const auth = getAuth(firebaseApp);
 
-const database = getDatabase(app);
+const database = getDatabase(firebaseApp);
 
-const firebaseReady = signInAnonymously(auth)
+signInAnonymously(auth)
   .then(() => {
     console.log("Firebase anonymous authentication successful.");
-    return true;
   })
   .catch((error) => {
     console.error(
       "Firebase anonymous authentication failed:",
       error
     );
-    return false;
   });
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log(
-      "Firebase user authenticated:",
-      user.uid
-    );
-  } else {
-    console.log(
-      "Firebase user is not authenticated."
-    );
-  }
-});
-
-export {
-  app,
-  auth,
-  database,
-  firebaseReady,
-};
-
-export default app;
+export { auth, database };
