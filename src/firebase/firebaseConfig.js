@@ -7,7 +7,7 @@ import {
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
+  apiKey: "YOUR_FIREBASE_API_KEY",
   authDomain: "sinag-ani-iot.firebaseapp.com",
   databaseURL:
     "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -18,16 +18,12 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Firebase Authentication
 const auth = getAuth(app);
 
-// Realtime Database
 const database = getDatabase(app);
 
-// Anonymous login
 const firebaseReady = signInAnonymously(auth)
   .then(() => {
     console.log("Firebase anonymous authentication successful.");
@@ -41,12 +37,16 @@ const firebaseReady = signInAnonymously(auth)
     return false;
   });
 
-// Monitor authentication state
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    console.log("Firebase authenticated:", user.uid);
+    console.log(
+      "Firebase user authenticated:",
+      user.uid
+    );
   } else {
-    console.log("Firebase not authenticated");
+    console.log(
+      "Firebase user is not authenticated."
+    );
   }
 });
 
@@ -56,3 +56,5 @@ export {
   database,
   firebaseReady,
 };
+
+export default app;
