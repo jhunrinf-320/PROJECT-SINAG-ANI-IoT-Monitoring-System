@@ -8,11 +8,12 @@ const firebaseConfig = {
   projectId: "sinag-ani-iot",
   storageBucket: "sinag-ani-iot.firebasestorage.app",
   messagingSenderId: "505006165687",
-  appId: "1:505006165687:web:8d930c2a846a978a41c732"
+  appId: "1:505006165687:web:8d930c2a846a978a41c732",
+  measurementId: "G-F1YD6L3XNL"
 };
 
 const app = initializeApp(firebaseConfig);
 
 const database = getDatabase(app);
 
-export default database;
+export { database };
