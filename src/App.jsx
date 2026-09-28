@@ -142,24 +142,11 @@ function App() {
       {/* ======================================
           DRYING CONTROL
       ====================================== */}
-
       <section className="dashboard-section">
 
-        <div className="section-card">
-
-          <h2>Drying Control</h2>
-
-          <p>
-            Select the drying mode for the
-            SINAG-ANI system.
-          </p>
-
-          <ControlPanel />
-
-        </div>
+         <ControlPanel />
 
       </section>
-
 
       {/* ======================================
           TEMPERATURE MONITORING
