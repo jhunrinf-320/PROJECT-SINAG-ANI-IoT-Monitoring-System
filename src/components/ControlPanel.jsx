@@ -1,108 +1,185 @@
-import {
-  ref,
-  set
-} from "firebase/database";
+import { ref, set } from "firebase/database";
+import { database } from "../firebase/firebaseConfig.js";
 
-import {
-  database
-} from "../firebase/firebaseConfig.js";
+function ControlPanel({
+  mode,
+  automatic,
+  paused,
+}) {
 
-function ControlPanel() {
-
-  // ==========================================
-  // SEND COMMAND TO ESP32 THROUGH FIREBASE
-  // ==========================================
-
-  const command = async (mode) => {
-
+  const sendCommand = async (command) => {
     try {
 
-      await set(
-        ref(
-          database,
-          "devices/device001/control/mode"
-        ),
-        mode
+      const commandRef = ref(
+        database,
+        "devices/device001/control/mode"
       );
 
+      await set(commandRef, command);
+
       console.log(
-        "Firebase command sent:",
-        mode
+        `Command sent: ${command}`
       );
 
     } catch (error) {
 
       console.error(
-        "Failed to send Firebase command:",
+        "Failed to send command:",
         error
       );
 
+      alert(
+        "Failed to send command. Check Firebase connection."
+      );
     }
-
   };
 
 
-  // ==========================================
-  // CONTROL PANEL
-  // ==========================================
-
   return (
-
     <div className="control-panel">
 
-      <h2>
-        Drying Control
-      </h2>
+      <div className="control-header">
+
+        <div>
+          <h2>System Controls</h2>
+
+          <p>
+            Control the SINAG-ANI drying operation.
+          </p>
+        </div>
+
+      </div>
 
 
-      <p>
-        Select the drying mode for the SINAG-ANI system.
-      </p>
+      {/* AUTOMATIC CONTROLS */}
+      <div className="control-group">
+
+        <h3>Automatic Drying</h3>
+
+        <div className="control-buttons">
+
+          <button
+            className="control-button start"
+            onClick={() =>
+              sendCommand("START")
+            }
+            disabled={automatic && !paused}
+          >
+            ▶ START
+          </button>
 
 
-      <div className="control-buttons">
-
-        {/* HIGH */}
-
-        <button
-          onClick={() => command("HIGH")}
-        >
-          HIGH
-        </button>
-
-
-        {/* MODERATE-HIGH */}
-
-        <button
-          onClick={() => command("MODERATE-HIGH")}
-        >
-          MODERATE-HIGH
-        </button>
+          <button
+            className="control-button pause"
+            onClick={() =>
+              sendCommand("PAUSE")
+            }
+            disabled={
+              !automatic ||
+              paused
+            }
+          >
+            ⏸ PAUSE
+          </button>
 
 
-        {/* MODERATE */}
+          <button
+            className="control-button resume"
+            onClick={() =>
+              sendCommand("RESUME")
+            }
+            disabled={
+              !automatic ||
+              !paused
+            }
+          >
+            ▶ RESUME
+          </button>
 
-        <button
-          onClick={() => command("MODERATE")}
-        >
-          MODERATE
-        </button>
+
+          <button
+            className="control-button stop"
+            onClick={() =>
+              sendCommand("STOP")
+            }
+          >
+            ■ STOP
+          </button>
+
+        </div>
+
+      </div>
 
 
-        {/* OFF */}
+      {/* MANUAL CONTROLS */}
+      <div className="control-group">
 
-        <button
-          onClick={() => command("OFF")}
-        >
-          OFF
-        </button>
+        <h3>Manual Fan Modes</h3>
+
+        <div className="control-buttons">
+
+          <button
+            className="control-button high"
+            onClick={() =>
+              sendCommand("HIGH")
+            }
+          >
+            HIGH
+            <span>100%</span>
+          </button>
+
+
+          <button
+            className="control-button moderate-high"
+            onClick={() =>
+              sendCommand("MODERATE-HIGH")
+            }
+          >
+            MODERATE-HIGH
+            <span>75%</span>
+          </button>
+
+
+          <button
+            className="control-button moderate"
+            onClick={() =>
+              sendCommand("MODERATE")
+            }
+          >
+            MODERATE
+            <span>50%</span>
+          </button>
+
+
+          <button
+            className="control-button off"
+            onClick={() =>
+              sendCommand("OFF")
+            }
+          >
+            OFF
+          </button>
+
+        </div>
+
+      </div>
+
+
+      {/* CURRENT COMMAND */}
+      <div className="current-command">
+
+        <span>
+          Current Mode
+        </span>
+
+        <strong>
+          {mode || "IDLE"}
+        </strong>
 
       </div>
 
     </div>
-
   );
-
 }
 
-export default ControlPanel; 
+export default ControlPanel;
