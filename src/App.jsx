@@ -3,17 +3,14 @@ import {
   useState
 } from "react";
 
-
 import {
   ref,
   onValue
 } from "firebase/database";
 
-
- import { 
-  database 
-} from "./firebase/firebaseConfig.js";
-
+import {
+  database
+} from "./firebase/firebaseConfig";
 
 import Sidebar from "./components/Sidebar";
 
@@ -26,426 +23,331 @@ import ControlPanel from "./components/ControlPanel";
 import TemperatureChart from "./components/TemperatureChart";
 
 
+function App() {
 
-function App(){
+  const [device, setDevice] = useState({});
 
+  const [history, setHistory] = useState([]);
 
-const [device,setDevice] = useState({});
+  const [activePage, setActivePage] = useState(
+    "Dashboard"
+  );
 
 
-const [history,setHistory] = useState([]);
+  // ================================
+  // FIREBASE LISTENER
+  // ================================
 
+  useEffect(() => {
 
-const [activePage,setActivePage] = useState(
-"Dashboard"
-);
+    const deviceRef = ref(
+      database,
+      "devices/device001"
+    );
 
 
+    const unsubscribe = onValue(
+      deviceRef,
 
-// ================================
-// FIREBASE LISTENER
-// ================================
+      (snapshot) => {
 
-useEffect(()=>{
+        const data = snapshot.val();
 
 
-const deviceRef = ref(
-database,
-"devices/device001"
-);
+        if (data) {
 
+          setDevice(data);
 
 
-const unsubscribe = onValue(
+          if (data.sensors?.temp1 !== undefined) {
 
-deviceRef,
+            setHistory(
+              (previous) => [
+                ...previous.slice(-9),
 
-(snapshot)=>{
+                {
+                  time:
+                    new Date()
+                      .toLocaleTimeString(),
 
+                  temp:
+                    data.sensors.temp1
+                }
 
-const data = snapshot.val();
+              ]
+            );
 
+          }
 
+        }
 
-if(data){
+      }
+    );
 
-setDevice(data);
 
+    return () => unsubscribe();
 
+  }, []);
 
-if(data.sensors?.temp1){
 
+  return (
 
-setHistory(
+    <div className="layout">
 
-(previous)=>[
 
-...previous.slice(-9),
+      {/* SIDEBAR */}
 
-{
+      <Sidebar
 
-time:
-new Date()
-.toLocaleTimeString(),
+        activePage={activePage}
 
-temp:
-data.sensors.temp1
+        setActivePage={setActivePage}
 
-}
+      />
 
-]
 
-);
+      {/* MAIN CONTENT */}
 
+      <main>
 
-}
+        <h1>
+          SINAG-ANI IoT Dashboard
+        </h1>
 
 
-}
+        {
+          activePage === "Dashboard" &&
 
+          (
 
+            <>
 
-}
+              {/* DEVICE ONLINE / OFFLINE */}
 
-);
+              <div className="status-online">
 
+                {
+                  device?.status?.online === 1
 
+                    ? "● DEVICE ONLINE"
 
-return()=>unsubscribe();
+                    : "● DEVICE OFFLINE"
+                }
 
+              </div>
 
 
-},[]);
+              <div className="cards">
 
 
+                <SensorCard
 
+                  title="Temperature Sensor 1"
 
+                  value={
+                    device?.sensors?.temp1
+                  }
 
-return(
+                  unit="°C"
 
+                  icon="🌡️"
 
-<div className="layout">
+                />
 
 
+                <SensorCard
 
-{/* SIDEBAR */}
+                  title="Temperature Sensor 2"
 
-<Sidebar
+                  value={
+                    device?.sensors?.temp2
+                  }
 
-activePage={activePage}
+                  unit="°C"
 
-setActivePage={setActivePage}
+                  icon="🔥"
 
-/>
+                />
 
 
+                <SensorCard
 
+                  title="Humidity"
 
+                  value={
+                    device?.sensors?.humidity
+                  }
 
-{/* MAIN CONTENT */}
+                  unit="%"
 
-<main>
+                  icon="💧"
 
+                />
 
 
-<h1>
-SINAG-ANI IoT Dashboard
-</h1>
+              </div>
 
 
+              <StatusCard
 
+                mode={
+                  device?.status?.mode
+                }
 
+                pwm={
+                  device?.status?.pwm
+                }
 
-{
-activePage === "Dashboard" &&
+              />
 
-(
+            </>
 
+          )
 
-<>
+        }
 
 
-<div className="status-online">
+        {
+          activePage === "Monitoring" &&
 
-● DEVICE ONLINE
+          (
 
-</div>
+            <>
 
+              <h2>
+                Sensor Monitoring
+              </h2>
 
 
+              <div className="cards">
 
 
-<div className="cards">
+                <SensorCard
 
+                  title="Temperature Sensor 1"
 
+                  value={
+                    device?.sensors?.temp1
+                  }
 
-<SensorCard
+                  unit="°C"
 
-title="Temperature Sensor 1"
+                  icon="🌡️"
 
-value={
-device?.sensors?.temp1
-}
+                />
 
-unit="°C"
 
-icon="🌡️"
+                <SensorCard
 
-/>
+                  title="Temperature Sensor 2"
 
+                  value={
+                    device?.sensors?.temp2
+                  }
 
+                  unit="°C"
 
+                  icon="🔥"
 
+                />
 
-<SensorCard
 
-title="Temperature Sensor 2"
+                <SensorCard
 
-value={
-device?.sensors?.temp2
-}
+                  title="Humidity"
 
-unit="°C"
+                  value={
+                    device?.sensors?.humidity
+                  }
 
-icon="🔥"
+                  unit="%"
 
-/>
+                  icon="💧"
 
+                />
 
 
+              </div>
 
 
-<SensorCard
+              <TemperatureChart
 
-title="Humidity"
+                data={history}
 
-value={
-device?.sensors?.humidity
-}
+              />
 
-unit="%"
+            </>
 
-icon="💧"
+          )
 
-/>
+        }
 
 
+        {
+          activePage === "Control" &&
 
-</div>
+          (
 
+            <>
 
+              <h2>
+                Drying Control
+              </h2>
 
 
+              <ControlPanel />
 
-<StatusCard
+            </>
 
-mode={
-device?.status?.mode
-}
+          )
 
-pwm={
-device?.status?.pwm
-}
+        }
 
-/>
 
+        {
+          activePage === "Settings" &&
 
+          (
 
-</>
+            <div className="settings-box">
 
-)
 
-}
+              <h2>
+                System Settings
+              </h2>
 
 
+              <p>
+                Device ID:
+                device001
+              </p>
 
 
+              <p>
+                Firebase Connection:
+                Active
+              </p>
 
 
+              <p>
+                Controller:
+                ESP32
+              </p>
 
 
-{
-activePage === "Monitoring" &&
+            </div>
 
-(
+          )
 
+        }
 
-<>
 
+      </main>
 
-<h2>
-Sensor Monitoring
-</h2>
 
+    </div>
 
-
-<div className="cards">
-
-
-<SensorCard
-
-title="Temperature Sensor 1"
-
-value={
-device?.sensors?.temp1
-}
-
-unit="°C"
-
-icon="🌡️"
-
-/>
-
-
-
-<SensorCard
-
-title="Temperature Sensor 2"
-
-value={
-device?.sensors?.temp2
-}
-
-unit="°C"
-
-icon="🔥"
-
-/>
-
-
-
-<SensorCard
-
-title="Humidity"
-
-value={
-device?.sensors?.humidity
-}
-
-unit="%"
-
-icon="💧"
-
-/>
-
-
-
-</div>
-
-
-
-
-
-<TemperatureChart
-
-data={history}
-
-/>
-
-
-</>
-
-
-)
-
-}
-
-
-
-
-
-
-
-
-{
-activePage === "Control" &&
-
-(
-
-
-<>
-
-
-<h2>
-Drying Control
-</h2>
-
-
-<ControlPanel/>
-
-
-
-
-</>
-
-
-)
-
-}
-
-
-
-
-
-
-
-
-{
-activePage === "Settings" &&
-
-(
-
-
-<div className="settings-box">
-
-
-<h2>
-System Settings
-</h2>
-
-
-
-<p>
-Device ID:
-device001
-</p>
-
-
-
-<p>
-Firebase Connection:
-Active
-</p>
-
-
-
-<p>
-Controller:
-ESP32
-</p>
-
-
-
-</div>
-
-
-)
-
-}
-
-
-
-
-
-</main>
-
-
-
-</div>
-
-
-)
-
+  );
 
 }
 
