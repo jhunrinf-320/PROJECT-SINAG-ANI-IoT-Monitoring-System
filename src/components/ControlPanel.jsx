@@ -1,14 +1,9 @@
 import {
-ref,
-set
-}
-from "firebase/database";
+  ref,
+  set
+} from "firebase/database";
 
-
-import {
-  database 
-} from "../firebase/firebaseConfig.js";
-
+import database from "../firebase/firebaseConfig.js";
 
 function ControlPanel(){
 
