@@ -1,8 +1,6 @@
-import { initializeApp } from "firebase/app";
-import {
-  getDatabase
-} from "firebase/database";
 
+import { initializeApp } from "firebase/app";
+import { getDatabase } from "firebase/database";
 import {
   getAuth,
   signInAnonymously
@@ -14,7 +12,6 @@ import {
 // ============================================================
 
 const firebaseConfig = {
-
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
 
   authDomain:
@@ -44,24 +41,21 @@ const firebaseConfig = {
 // INITIALIZE FIREBASE
 // ============================================================
 
-const firebaseApp =
-  initializeApp(firebaseConfig);
+const firebaseApp = initializeApp(firebaseConfig);
 
 
 // ============================================================
-// FIREBASE AUTHENTICATION
+// INITIALIZE AUTHENTICATION
 // ============================================================
 
-const auth =
-  getAuth(firebaseApp);
+const auth = getAuth(firebaseApp);
 
 
 // ============================================================
-// FIREBASE REALTIME DATABASE
+// INITIALIZE REALTIME DATABASE
 // ============================================================
 
-const database =
-  getDatabase(firebaseApp);
+const database = getDatabase(firebaseApp);
 
 
 // ============================================================
@@ -69,22 +63,16 @@ const database =
 // ============================================================
 
 signInAnonymously(auth)
-
   .then(() => {
-
     console.log(
       "Firebase anonymous authentication successful."
     );
-
   })
-
   .catch((error) => {
-
     console.error(
       "Firebase anonymous authentication failed:",
       error
     );
-
   });
 
 
