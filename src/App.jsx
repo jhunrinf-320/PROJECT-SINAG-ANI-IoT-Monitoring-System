@@ -3,7 +3,6 @@ import { ref, onValue } from "firebase/database";
 
 import { database } from "./firebase/firebaseConfig.js";
 
-import Sidebar from "./components/Sidebar";
 import SensorCard from "./components/SensorCard";
 import StatusCard from "./components/StatusCard";
 import ControlPanel from "./components/ControlPanel";
@@ -12,11 +11,11 @@ import TemperatureChart from "./components/TemperatureChart";
 function App() {
   const [device, setDevice] = useState({});
   const [history, setHistory] = useState([]);
-  const [activePage, setActivePage] = useState("Dashboard");
 
   // ==========================================
   // FIREBASE DEVICE DATA
   // ==========================================
+
   useEffect(() => {
     const deviceRef = ref(database, "devices/device001");
 
@@ -28,20 +27,19 @@ function App() {
         if (data) {
           setDevice(data);
 
-          // ==========================================
-          // SAVE TEMPERATURE HISTORY
-          // ==========================================
+          // Save temperature history
           if (
             data.sensors?.temp1 !== undefined &&
             data.sensors?.temp1 !== null
           ) {
-            setHistory((previous) => [
-              ...previous.slice(-9),
-              {
+            setHistory((previous) => {
+              const newReading = {
                 time: new Date().toLocaleTimeString(),
                 temp: Number(data.sensors.temp1),
-              },
-            ]);
+              };
+
+              return [...previous.slice(-9), newReading];
+            });
           }
         }
       },
@@ -54,34 +52,30 @@ function App() {
   }, []);
 
   // ==========================================
-  // DEVICE ONLINE / OFFLINE STATUS
+  // ONLINE / OFFLINE STATUS
   // ==========================================
+
   const isOnline =
     device?.status?.online === true ||
     device?.status?.online === 1 ||
     device?.status?.online === "true";
 
   return (
-    <div className="layout">
+    <div className="app">
 
-      {/* ==========================================
-          SIDEBAR
-      ========================================== */}
-      <Sidebar
-        activePage={activePage}
-        setActivePage={setActivePage}
-      />
+      {/* ======================================
+          HEADER
+      ====================================== */}
 
-      {/* ==========================================
-          MAIN CONTENT
-      ========================================== */}
-      <main>
+      <header className="dashboard-header">
 
-        <h1>SINAG-ANI IoT Dashboard</h1>
+        <div>
+          <h1>SINAG-ANI IoT Dashboard</h1>
+          <p>IoT Dryer System</p>
+        </div>
 
-        {/* ==========================================
-            ONLINE / OFFLINE STATUS
-        ========================================== */}
+        {/* ONLINE / OFFLINE */}
+
         <div
           className={`device-status ${
             isOnline ? "online" : "offline"
@@ -89,121 +83,146 @@ function App() {
         >
           <span className="status-dot"></span>
 
-          <span>
-            {isOnline
-              ? "Device Online"
-              : "Device Offline"}
-          </span>
+          {isOnline
+            ? "Device Online"
+            : "Device Offline"}
         </div>
 
-        {/* ==========================================
-            DASHBOARD PAGE
-        ========================================== */}
-        {activePage === "Dashboard" ? (
-          <>
-            <div className="cards">
+      </header>
 
-              <SensorCard
-                title="Temperature Sensor 1"
-                value={device?.sensors?.temp1}
-                unit="°C"
-                icon="🌡️"
-              />
 
-              <SensorCard
-                title="Temperature Sensor 2"
-                value={device?.sensors?.temp2}
-                unit="°C"
-                icon="🔥"
-              />
+      {/* ======================================
+          SENSOR CARDS
+      ====================================== */}
 
-              <SensorCard
-                title="Humidity"
-                value={device?.sensors?.humidity}
-                unit="%"
-                icon="💧"
-              />
+      <section className="dashboard-section">
 
-            </div>
+        <div className="cards">
 
-            <StatusCard
-              mode={device?.status?.mode}
-              pwm={device?.status?.pwm}
-            />
-          </>
-        ) : null}
+          <SensorCard
+            title="Temperature Sensor 1"
+            value={device?.sensors?.temp1}
+            unit="°C"
+            icon="🌡️"
+          />
 
-        {/* ==========================================
-            MONITORING PAGE
-        ========================================== */}
-        {activePage === "Monitoring" ? (
-          <>
-            <h2>Sensor Monitoring</h2>
+          <SensorCard
+            title="Temperature Sensor 2"
+            value={device?.sensors?.temp2}
+            unit="°C"
+            icon="🔥"
+          />
 
-            <div className="cards">
+          <SensorCard
+            title="Humidity"
+            value={device?.sensors?.humidity}
+            unit="%"
+            icon="💧"
+          />
 
-              <SensorCard
-                title="Temperature Sensor 1"
-                value={device?.sensors?.temp1}
-                unit="°C"
-                icon="🌡️"
-              />
+        </div>
 
-              <SensorCard
-                title="Temperature Sensor 2"
-                value={device?.sensors?.temp2}
-                unit="°C"
-                icon="🔥"
-              />
+      </section>
 
-              <SensorCard
-                title="Humidity"
-                value={device?.sensors?.humidity}
-                unit="%"
-                icon="💧"
-              />
 
-            </div>
+      {/* ======================================
+          DRYING STATUS
+      ====================================== */}
 
-            <TemperatureChart data={history} />
-          </>
-        ) : null}
+      <section className="dashboard-section">
 
-        {/* ==========================================
-            CONTROL PAGE
-        ========================================== */}
-        {activePage === "Control" ? (
-          <>
-            <h2>Drying Control</h2>
+        <StatusCard
+          mode={device?.status?.mode}
+          pwm={device?.status?.pwm}
+        />
 
-            <ControlPanel />
-          </>
-        ) : null}
+      </section>
 
-        {/* ==========================================
-            SETTINGS PAGE
-        ========================================== */}
-        {activePage === "Settings" ? (
-          <div className="settings-box">
 
-            <h2>System Settings</h2>
+      {/* ======================================
+          DRYING CONTROL
+      ====================================== */}
+
+      <section className="dashboard-section">
+
+        <div className="section-card">
+
+          <h2>Drying Control</h2>
+
+          <p>
+            Select the drying mode for the
+            SINAG-ANI system.
+          </p>
+
+          <ControlPanel />
+
+        </div>
+
+      </section>
+
+
+      {/* ======================================
+          TEMPERATURE MONITORING
+      ====================================== */}
+
+      <section className="dashboard-section">
+
+        <div className="section-card">
+
+          <h2>Temperature Monitoring</h2>
+
+          <p>
+            Real-time temperature history from
+            Temperature Sensor 1.
+          </p>
+
+          <TemperatureChart data={history} />
+
+        </div>
+
+      </section>
+
+
+      {/* ======================================
+          SYSTEM INFORMATION
+      ====================================== */}
+
+      <section className="dashboard-section">
+
+        <div className="section-card">
+
+          <h2>System Information</h2>
+
+          <div className="system-info">
 
             <p>
-              <strong>Device ID:</strong> device001
+              <strong>Device ID:</strong>{" "}
+              device001
             </p>
 
             <p>
-              <strong>Firebase Connection:</strong> Active
+              <strong>Controller:</strong>{" "}
+              ESP32
             </p>
 
             <p>
-              <strong>Controller:</strong> ESP32
+              <strong>Firebase:</strong>{" "}
+              Connected
+            </p>
+
+            <p>
+              <strong>Device Status:</strong>{" "}
+              {isOnline
+                ? "Online"
+                : "Offline"}
             </p>
 
           </div>
-        ) : null}
 
-      </main>
+        </div>
+
+      </section>
+
     </div>
   );
 }
