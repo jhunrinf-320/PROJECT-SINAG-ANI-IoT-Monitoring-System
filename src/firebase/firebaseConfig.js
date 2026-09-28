@@ -20,14 +20,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
-
 const database = getDatabase(app);
 
 signInAnonymously(auth)
   .then(() => {
-    console.log(
-      "Firebase anonymous authentication successful."
-    );
+    console.log("Firebase anonymous authentication successful.");
   })
   .catch((error) => {
     console.error(
@@ -36,7 +33,4 @@ signInAnonymously(auth)
     );
   });
 
-export {
-  auth,
-  database
-};
+export { auth, database };
