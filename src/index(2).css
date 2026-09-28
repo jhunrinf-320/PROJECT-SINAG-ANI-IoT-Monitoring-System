@@ -1,0 +1,517 @@
+/* =========================================================
+   SINAG-ANI IoT
+========================================================= */
+
+:root {
+  --green-dark: #14532d;
+  --green: #166534;
+  --green-light: #dcfce7;
+
+  --solar: #f59e0b;
+  --solar-light: #fef3c7;
+
+  --teal: #0f766e;
+  --teal-light: #ccfbf1;
+
+  --navy: #172033;
+  --muted: #64748b;
+
+  --background: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+
+  --danger: #dc2626;
+
+  --shadow:
+    0 8px 25px rgba(15, 23, 42, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+  background: var(--background);
+  color: var(--navy);
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+
+  width: 250px;
+  min-width: 250px;
+  height: 100vh;
+
+  padding: 28px 20px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #14532d 0%,
+      #166534 55%,
+      #064e3b 100%
+    );
+
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+
+  box-shadow:
+    5px 0 20px rgba(15, 23, 42, 0.08);
+
+  z-index: 100;
+}
+
+.sidebar h2 {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 800;
+  color: white;
+}
+
+.sidebar h2::before {
+  content: "☀️ ";
+}
+
+.sidebar p {
+  margin: 6px 0 0;
+  color: #bbf7d0;
+  font-size: 13px;
+}
+
+.sidebar hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 25px 0 15px;
+}
+
+.sidebar button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  padding: 13px 15px;
+  margin: 5px 0;
+
+  border: none;
+  border-radius: 12px;
+
+  background: transparent;
+  color: #dcfce7;
+
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sidebar button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  transform: translateX(2px);
+}
+
+.sidebar button.menu-active {
+  background: var(--solar) !important;
+  color: #422006 !important;
+  font-weight: 800;
+
+  box-shadow:
+    0 5px 15px rgba(245, 158, 11, 0.25);
+}
+
+.sidebar button span {
+  width: 26px;
+  margin-right: 12px;
+
+  font-size: 17px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+main {
+  flex: 1;
+  min-width: 0;
+  padding: 35px;
+}
+
+main h1 {
+  margin: 0 0 8px;
+  color: var(--navy);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+main h2 {
+  margin: 0 0 18px;
+  color: var(--green-dark);
+  font-size: 23px;
+  font-weight: 750;
+}
+
+.status-online,
+.status-offline {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 8px 14px;
+  margin: 10px 0 25px;
+
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.status-online {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.status-offline {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+.cards {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(230px, 1fr)
+    );
+
+  gap: 20px;
+  width: 100%;
+}
+
+.sensor-card {
+  position: relative;
+  min-height: 155px;
+  padding: 22px;
+
+  background: var(--card);
+
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  box-shadow: var(--shadow);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sensor-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.1);
+}
+
+.sensor-card h3 {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sensor-card h1 {
+  margin: 14px 0 0;
+
+  color: var(--navy);
+
+  font-size: 38px;
+  font-weight: 800;
+}
+
+.status-card,
+.control,
+.control-panel,
+.chart,
+.settings-box {
+  width: 100%;
+
+  margin-top: 22px;
+  padding: 25px;
+
+  background: var(--card);
+
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  box-shadow: var(--shadow);
+}
+
+.status-card {
+  border-top: 4px solid var(--solar);
+}
+
+.status-card h2 {
+  color: var(--green-dark);
+}
+
+.control-panel h2,
+.control h2 {
+  color: var(--green-dark);
+  margin-top: 0;
+}
+
+.control-buttons {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(150px, 1fr)
+    );
+
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.control-buttons button {
+  min-height: 50px;
+
+  margin: 0;
+  padding: 12px 18px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: var(--green);
+  color: white;
+
+  font-size: 14px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.control-buttons button:hover {
+  background: var(--green-dark);
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 7px 18px rgba(22, 101, 52, 0.2);
+}
+
+.control-buttons button:first-child {
+  background: var(--solar);
+  color: #422006;
+}
+
+.control-buttons button:first-child:hover {
+  background: #d97706;
+}
+
+.settings-box {
+  border-top: 4px solid var(--teal);
+}
+
+.settings-box h2 {
+  margin-top: 0;
+  color: var(--teal);
+}
+
+.settings-box p {
+  padding: 14px 16px;
+  margin: 10px 0;
+
+  background: #f8fafc;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  font-size: 15px;
+}
+
+.chart {
+  border-top: 4px solid var(--teal);
+  min-height: 300px;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+
+    padding: 14px 12px;
+
+    display: block;
+
+    background:
+      linear-gradient(
+        90deg,
+        #14532d,
+        #166534,
+        #0f766e
+      );
+  }
+
+  .sidebar h2 {
+    font-size: 19px;
+  }
+
+  .sidebar p {
+    font-size: 11px;
+  }
+
+  .sidebar hr {
+    margin: 12px 0 8px;
+  }
+
+  .sidebar button {
+    width: auto;
+
+    display: inline-flex;
+
+    padding: 9px 11px;
+    margin: 3px 2px;
+
+    border-radius: 9px;
+
+    font-size: 12px;
+  }
+
+  .sidebar button span {
+    width: auto;
+    margin-right: 5px;
+    font-size: 14px;
+  }
+
+  main {
+    width: 100%;
+    padding: 20px 14px 35px;
+  }
+
+  main h1 {
+    font-size: 25px;
+  }
+
+  main h2 {
+    font-size: 20px;
+  }
+
+  .cards {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 12px;
+  }
+
+  .sensor-card {
+    min-height: 140px;
+    padding: 15px;
+    border-radius: 15px;
+  }
+
+  .sensor-card h1 {
+    font-size: 29px;
+  }
+
+  .status-online,
+  .status-offline {
+    margin-bottom: 18px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .control,
+  .control-panel,
+  .status-card,
+  .settings-box {
+    padding: 17px;
+    border-radius: 15px;
+  }
+
+  .control-buttons {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .control-buttons button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  main {
+    padding: 16px 10px 30px;
+  }
+
+  main h1 {
+    font-size: 22px;
+  }
+
+  .sidebar button {
+    padding: 8px 9px;
+    font-size: 11px;
+  }
+
+  .cards {
+    gap: 9px;
+  }
+
+  .sensor-card {
+    min-height: 130px;
+    padding: 13px;
+  }
+
+  .sensor-card h1 {
+    font-size: 25px;
+  }
+}
