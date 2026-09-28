@@ -1,72 +1,27 @@
-
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import {
-  getAuth,
-  signInAnonymously
-} from "firebase/auth";
-
-
-// ============================================================
-// FIREBASE CONFIGURATION
-// ============================================================
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
-
-  authDomain:
-    "sinag-ani-iot.firebaseapp.com",
-
+  authDomain: "sinag-ani-iot.firebaseapp.com",
   databaseURL:
     "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
-
-  projectId:
-    "sinag-ani-iot",
-
-  storageBucket:
-    "sinag-ani-iot.firebasestorage.app",
-
-  messagingSenderId:
-    "505006165687",
-
-  appId:
-    "1:505006165687:web:8d930c2a846a978a41c732",
-
-  measurementId:
-    "G-F1YD6L3XNL"
+  projectId: "sinag-ani-iot",
+  storageBucket: "sinag-ani-iot.firebasestorage.app",
+  messagingSenderId: "505006165687",
+  appId: "1:505006165687:web:8d930c2a846a978a41c732",
+  measurementId: "G-F1YD6L3XNL",
 };
 
+const app = initializeApp(firebaseConfig);
 
-// ============================================================
-// INITIALIZE FIREBASE
-// ============================================================
-
-const firebaseApp = initializeApp(firebaseConfig);
-
-
-// ============================================================
-// INITIALIZE AUTHENTICATION
-// ============================================================
-
-const auth = getAuth(firebaseApp);
-
-
-// ============================================================
-// INITIALIZE REALTIME DATABASE
-// ============================================================
-
-const database = getDatabase(firebaseApp);
-
-
-// ============================================================
-// ANONYMOUS AUTHENTICATION
-// ============================================================
+const auth = getAuth(app);
+const database = getDatabase(app);
 
 signInAnonymously(auth)
   .then(() => {
-    console.log(
-      "Firebase anonymous authentication successful."
-    );
+    console.log("Firebase anonymous authentication successful.");
   })
   .catch((error) => {
     console.error(
@@ -75,12 +30,4 @@ signInAnonymously(auth)
     );
   });
 
-
-// ============================================================
-// EXPORTS
-// ============================================================
-
-export {
-  auth,
-  database
-};
+export { auth, database };
