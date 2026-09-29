@@ -3,67 +3,33 @@ function SensorCard({
   value,
   unit,
   icon,
-  healthy = true,
-  sensorName,
 }) {
+  const numericValue = Number(value);
 
-  const numericValue =
-    value !== undefined &&
-    value !== null &&
-    !Number.isNaN(Number(value))
-      ? Number(value)
-      : null;
-
+  const displayValue =
+    Number.isFinite(numericValue)
+      ? numericValue.toFixed(1)
+      : "--";
 
   return (
+
     <div className="sensor-card">
 
-      <div className="sensor-card-top">
-
-        <div className="sensor-icon">
-          {icon}
-        </div>
-
-        <div
-          className={`sensor-health ${
-            healthy
-              ? "healthy"
-              : "unhealthy"
-          }`}
-        >
-          <span className="health-dot"></span>
-
-          {healthy
-            ? "Healthy"
-            : "Error"}
-        </div>
-
+      <div className="icon">
+        {icon}
       </div>
 
+      <h3>
+        {title}
+      </h3>
 
-      <div className="sensor-card-content">
+      <h1>
+        {displayValue}
 
-        <h3>
-          {title}
-        </h3>
-
-        <div className="sensor-value">
-
-          {numericValue !== null
-            ? numericValue.toFixed(1)
-            : "--"}
-
-          <span>
-            {unit}
-          </span>
-
-        </div>
-
-        <p>
-          {sensorName}
-        </p>
-
-      </div>
+        <span>
+          {unit}
+        </span>
+      </h1>
 
     </div>
   );
