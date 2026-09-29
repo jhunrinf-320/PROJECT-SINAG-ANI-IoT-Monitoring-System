@@ -1,231 +1,156 @@
-function StatusCard({
-  mode,
-  stage,
-  automatic,
-  paused,
-  pwm,
-  coolFan,
-  stageRemainingSeconds,
-  totalRemainingSeconds,
-  totalElapsedSeconds,
-}) {
-
-  const fanPercentage = Math.round(
-    (Number(pwm) / 255) * 100
+function formatTime(seconds) {
+  const total = Math.max(
+    0,
+    Math.floor(Number(seconds) || 0)
   );
 
-  const formatDuration = (seconds) => {
-    const totalSeconds = Math.max(
-      0,
-      Number(seconds) || 0
-    );
+  const hours = String(
+    Math.floor(total / 3600)
+  ).padStart(2, "0");
 
-    const hours = Math.floor(
-      totalSeconds / 3600
-    );
+  const minutes = String(
+    Math.floor((total % 3600) / 60)
+  ).padStart(2, "0");
 
-    const minutes = Math.floor(
-      (totalSeconds % 3600) / 60
-    );
+  const secs = String(
+    total % 60
+  ).padStart(2, "0");
 
-    const secs = totalSeconds % 60;
+  return `${hours}:${minutes}:${secs}`;
+}
 
-    return `${String(hours).padStart(2, "0")}:${String(
-      minutes
-    ).padStart(2, "0")}:${String(secs).padStart(
-      2,
-      "0"
-    )}`;
-  };
+function StatusCard({
+  mode,
+  pwm,
+  stage,
+  online,
+  automatic,
+  paused,
+  stageElapsedSeconds,
+  stageRemainingSeconds,
+  totalElapsedSeconds,
+  totalRemainingSeconds,
+  coolFan,
+}) {
 
-  const getStageName = () => {
-    if (stage === "INITIAL") {
-      return "INITIAL";
-    }
+  const elapsed =
+    Number(stageElapsedSeconds) || 0;
 
-    if (stage === "MAIN") {
-      return "MAIN";
-    }
+  const remaining =
+    Number(stageRemainingSeconds) || 0;
 
-    if (stage === "FINAL") {
-      return "FINAL";
-    }
+  const totalRemaining =
+    Number(totalRemainingSeconds) || 0;
 
-    if (stage === "COMPLETE") {
-      return "COMPLETE";
-    }
+  const totalElapsed =
+    Number(totalElapsedSeconds) || 0;
 
-    if (stage === "PAUSED") {
-      return "PAUSED";
-    }
+  const fanPWM =
+    Number(pwm) || 0;
 
-    if (stage === "IDLE") {
-      return "IDLE";
-    }
+  const fanPercentage =
+    Math.round((fanPWM / 255) * 100);
 
-    return stage || "IDLE";
-  };
-
-  const getSystemState = () => {
-    if (paused) {
-      return "PAUSED";
-    }
-
-    if (automatic) {
-      return "AUTOMATIC";
-    }
-
-    if (
-      mode === "HIGH" ||
-      mode === "MODERATE-HIGH" ||
-      mode === "MODERATE"
-    ) {
-      return "MANUAL";
-    }
-
-    if (mode === "COMPLETE") {
-      return "COMPLETE";
-    }
-
-    return "IDLE";
-  };
+  const stageProgress =
+    elapsed + remaining > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (elapsed /
+              (elapsed + remaining)) *
+              100
+          )
+        )
+      : 0;
 
   return (
-    <div className="status-card">
 
-      <div className="status-header">
+    <section className="status-card">
+
+      <div className="status-title">
 
         <div>
-          <h2>Drying Status</h2>
-          <p>Current SINAG-ANI operation</p>
+
+          <h2>
+            Drying Status
+          </h2>
+
+          <p>
+            Current SINAG-ANI operation
+          </p>
+
         </div>
 
-        <div className="state-badge">
-          {getSystemState()}
-        </div>
+        <span className="mode-badge">
+          {mode || "IDLE"}
+        </span>
 
       </div>
 
 
       <div className="status-grid">
 
-        {/* MODE */}
         <div className="status-item">
-
-          <span className="status-label">
-            Mode
-          </span>
-
-          <strong className="status-value">
-            {mode || "IDLE"}
+          <span>Mode</span>
+          <strong>
+            {mode || "OFF"}
           </strong>
-
         </div>
 
 
-        {/* STAGE */}
         <div className="status-item">
-
-          <span className="status-label">
-            Stage
-          </span>
-
-          <strong className="status-value">
-            {getStageName()}
+          <span>Stage</span>
+          <strong>
+            {stage || "OFF"}
           </strong>
-
         </div>
 
 
-        {/* STAGE TIMER */}
-        <div className="status-item timer-item">
-
-          <span className="status-label">
+        <div className="status-item">
+          <span>
             Stage Time Remaining
           </span>
 
-          <strong className="timer-value">
-            {formatDuration(
-              stageRemainingSeconds
-            )}
+          <strong>
+            {formatTime(remaining)}
           </strong>
-
         </div>
 
 
-        {/* TOTAL TIMER */}
-        <div className="status-item timer-item">
-
-          <span className="status-label">
+        <div className="status-item">
+          <span>
             Total Time Remaining
           </span>
 
-          <strong className="timer-value">
-            {formatDuration(
-              totalRemainingSeconds
-            )}
+          <strong>
+            {formatTime(totalRemaining)}
           </strong>
-
         </div>
 
 
-        {/* TOTAL ELAPSED */}
         <div className="status-item">
-
-          <span className="status-label">
+          <span>
             Total Elapsed
           </span>
 
-          <strong className="status-value">
-            {formatDuration(
-              totalElapsedSeconds
-            )}
+          <strong>
+            {formatTime(totalElapsed)}
           </strong>
-
         </div>
 
 
-        {/* FAN */}
         <div className="status-item">
-
-          <span className="status-label">
+          <span>
             Main Fan
           </span>
 
-          <strong className="status-value">
-            {fanPercentage}%
+          <strong>
+            {fanPWM}/255
           </strong>
-
         </div>
 
 
-        {/* COOL FAN */}
         <div className="status-item">
-
-          <span className="status-label">
-            Cool-Air Fan
-          </span>
-
-          <strong
-            className={
-              coolFan
-                ? "status-value fan-on"
-                : "status-value fan-off"
-            }
-          >
-            {coolFan ? "ON" : "OFF"}
-          </strong>
-
-        </div>
-
-      </div>
-
-
-      {/* FAN BAR */}
-      <div className="fan-progress">
-
-        <div className="progress-header">
-
           <span>
             Main Fan Power
           </span>
@@ -233,18 +158,60 @@ function StatusCard({
           <strong>
             {fanPercentage}%
           </strong>
+        </div>
+
+
+        <div className="status-item">
+          <span>
+            Cool-Air Fan
+          </span>
+
+          <strong>
+            {coolFan ? "ON" : "OFF"}
+          </strong>
+        </div>
+
+
+        <div className="status-item">
+          <span>
+            Operation
+          </span>
+
+          <strong>
+            {paused
+              ? "PAUSED"
+              : automatic
+              ? "AUTOMATIC"
+              : online
+              ? "ACTIVE"
+              : "IDLE"}
+          </strong>
+        </div>
+
+      </div>
+
+
+      <div className="status-progress">
+
+        <div className="progress-label">
+
+          <span>
+            Current stage progress
+          </span>
+
+          <span>
+            {stageProgress}%
+          </span>
 
         </div>
+
 
         <div className="progress-track">
 
           <div
             className="progress-fill"
             style={{
-              width: `${Math.min(
-                100,
-                Math.max(0, fanPercentage)
-              )}%`,
+              width: `${stageProgress}%`,
             }}
           />
 
@@ -252,7 +219,7 @@ function StatusCard({
 
       </div>
 
-    </div>
+    </section>
   );
 }
 
