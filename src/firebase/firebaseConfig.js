@@ -1,6 +1,19 @@
-import { initializeApp, getApps } from "firebase/app";
-import { getDatabase } from "firebase/database";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+} from "firebase/database";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+} from "firebase/auth";
+
+// ==========================================
+// FIREBASE CONFIGURATION
+// ==========================================
 
 const firebaseConfig = {
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
@@ -14,15 +27,40 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL",
 };
 
-// Prevent Firebase from being initialized twice
-const firebaseApp =
+// ==========================================
+// INITIALIZE FIREBASE
+// ==========================================
+
+const app =
   getApps().length > 0
-    ? getApps()[0]
+    ? getApp()
     : initializeApp(firebaseConfig);
 
-const database = getDatabase(firebaseApp);
-const auth = getAuth(firebaseApp);
+// ==========================================
+// FIREBASE DATABASE
+// ==========================================
 
-export { firebaseApp, database, auth };
+const database = getDatabase(app);
 
-export default firebaseApp;
+// ==========================================
+// FIREBASE AUTH
+// ==========================================
+
+const auth = getAuth(app);
+
+// ==========================================
+// EXPORT EVERYTHING NEEDED
+// ==========================================
+
+export {
+  app,
+  database,
+  auth,
+  ref,
+  onValue,
+  set,
+  signInAnonymously,
+  onAuthStateChanged,
+};
+
+export default app;
