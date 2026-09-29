@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
-  database,
+  getDatabase,
   ref,
   onValue,
-} from "./firebase/firebaseConfig";
+} from "firebase/database";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+} from "firebase/auth";
 
 import Sidebar from "./components/Sidebar";
 import SensorCard from "./components/SensorCard";
@@ -12,61 +18,131 @@ import StatusCard from "./components/StatusCard";
 import ControlPanel from "./components/ControlPanel";
 import TemperatureChart from "./components/TemperatureChart";
 
+// ==========================================
+// FIREBASE CONFIG
+// ==========================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
+  authDomain: "sinag-ani-iot.firebaseapp.com",
+  databaseURL:
+    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sinag-ani-iot",
+  storageBucket: "sinag-ani-iot.firebasestorage.app",
+  messagingSenderId: "505006165687",
+  appId: "1:505006165687:web:8d930c2a846a978a41c732",
+  measurementId: "G-F1YD6L3XNL",
+};
+
+// ==========================================
+// INITIALIZE FIREBASE
+// ==========================================
+
+const firebaseApp =
+  getApps().length > 0
+    ? getApp()
+    : initializeApp(firebaseConfig);
+
+const database = getDatabase(firebaseApp);
+const auth = getAuth(firebaseApp);
+
+// ==========================================
+// APP
+// ==========================================
+
 function App() {
   const [device, setDevice] = useState({});
   const [history, setHistory] = useState([]);
   const [activePage, setActivePage] = useState("Dashboard");
+  const [firebaseReady, setFirebaseReady] = useState(false);
 
   // ==========================================
-  // FIREBASE DEVICE LISTENER
+  // FIREBASE AUTH + DEVICE LISTENER
   // ==========================================
 
   useEffect(() => {
-    const deviceRef = ref(
-      database,
-      "devices/device001"
-    );
+    let unsubscribeDevice = null;
 
-    const unsubscribe = onValue(
-      deviceRef,
-      (snapshot) => {
-        const data = snapshot.val();
+    const unsubscribeAuth = onAuthStateChanged(
+      auth,
+      (user) => {
+        if (!user) {
+          setFirebaseReady(false);
 
-        console.log("Firebase device data:", data);
+          signInAnonymously(auth).catch((error) => {
+            console.error(
+              "Anonymous authentication failed:",
+              error
+            );
+          });
 
-        if (data) {
-          setDevice(data);
-
-          const temp1 = data?.sensors?.temp1;
-
-          if (
-            temp1 !== undefined &&
-            temp1 !== null &&
-            !isNaN(Number(temp1))
-          ) {
-            setHistory((previous) => [
-              ...previous.slice(-19),
-              {
-                time: new Date().toLocaleTimeString(),
-                temp: Number(temp1),
-              },
-            ]);
-          }
+          return;
         }
-      },
-      (error) => {
-        console.error(
-          "Firebase listener error:",
-          error
+
+        console.log(
+          "Firebase authentication successful"
+        );
+
+        setFirebaseReady(true);
+
+        const deviceRef = ref(
+          database,
+          "devices/device001"
+        );
+
+        unsubscribeDevice = onValue(
+          deviceRef,
+          (snapshot) => {
+            const data = snapshot.val();
+
+            console.log(
+              "Firebase device data:",
+              data
+            );
+
+            if (data) {
+              setDevice(data);
+
+              const temp1 =
+                data?.sensors?.temp1;
+
+              if (
+                temp1 !== undefined &&
+                temp1 !== null &&
+                !isNaN(Number(temp1))
+              ) {
+                setHistory((previous) => [
+                  ...previous.slice(-19),
+                  {
+                    time:
+                      new Date().toLocaleTimeString(),
+                    temp: Number(temp1),
+                  },
+                ]);
+              }
+            }
+          },
+          (error) => {
+            console.error(
+              "Firebase device listener error:",
+              error
+            );
+          }
         );
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+
+      if (unsubscribeDevice) {
+        unsubscribeDevice();
+      }
+    };
   }, []);
 
   // ==========================================
-  // SENSOR VALUES
+  // SENSOR DATA
   // ==========================================
 
   const temp1 = device?.sensors?.temp1;
@@ -74,7 +150,7 @@ function App() {
   const humidity = device?.sensors?.humidity;
 
   // ==========================================
-  // DEVICE ONLINE STATUS
+  // DEVICE ONLINE
   // ==========================================
 
   const deviceOnline =
@@ -86,7 +162,7 @@ function App() {
     device?.online === "1";
 
   // ==========================================
-  // MAIN APP
+  // RENDER
   // ==========================================
 
   return (
@@ -102,7 +178,7 @@ function App() {
       />
 
       {/* ======================================
-          MAIN CONTENT
+          MAIN
       ====================================== */}
 
       <main>
@@ -115,17 +191,17 @@ function App() {
 
         {activePage === "Dashboard" && (
           <>
-            {/* DEVICE STATUS */}
+            {/* CONNECTION STATUS */}
 
             <div
               className={
-                deviceOnline
+                deviceOnline && firebaseReady
                   ? "status-online"
                   : "status-offline"
               }
             >
               ●{" "}
-              {deviceOnline
+              {deviceOnline && firebaseReady
                 ? "DEVICE ONLINE"
                 : "DEVICE OFFLINE"}
             </div>
@@ -181,9 +257,7 @@ function App() {
               coolFan={device?.status?.coolFan}
             />
 
-            {/* =================================
-                CONTROL PANEL
-            ================================= */}
+            {/* CONTROL PANEL */}
 
             <ControlPanel />
           </>
@@ -229,7 +303,7 @@ function App() {
         )}
 
         {/* ====================================
-            CONTROL PAGE
+            CONTROL
         ==================================== */}
 
         {activePage === "Control" && (
@@ -256,7 +330,9 @@ function App() {
 
             <p>
               <strong>Firebase:</strong>{" "}
-              Connected
+              {firebaseReady
+                ? "Connected"
+                : "Connecting..."}
             </p>
 
             <p>
