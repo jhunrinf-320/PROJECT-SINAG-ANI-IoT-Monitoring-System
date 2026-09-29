@@ -1,100 +1,457 @@
-/* ==========================================
-   SINAG-ANI COMMAND CONTROL
-   ========================================== */
+/* ============================================================
+   RESET
+============================================================ */
 
-.control-panel {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 24px;
-  margin-top: 20px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+* {
+  box-sizing: border-box;
 }
 
-.control-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 25px;
-}
-
-.control-header h2 {
+html,
+body,
+#root {
   margin: 0;
+  min-height: 100%;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
-.control-header p {
-  margin-top: 6px;
-  color: #64748b;
+body {
+  background: #f4f7f5;
+  color: #17211b;
 }
 
-.firebase-status {
+/* ============================================================
+   APP
+============================================================ */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ============================================================
+   MAIN
+============================================================ */
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  padding: 32px;
+  max-width: 1600px;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.page-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.brand-small {
+  color: #23834a;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.page-header p {
+  margin: 8px 0 0;
+  color: #69766e;
+  font-size: 14px;
+}
+
+/* ============================================================
+   CONNECTION BADGE
+============================================================ */
+
+.connection-badge {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 15px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   white-space: nowrap;
 }
 
-.firebase-status.connected {
-  background: #dcfce7;
-  color: #166534;
+.connection-badge.online {
+  background: #e7f7ed;
+  color: #17733d;
 }
 
-.firebase-status.disconnected {
-  background: #fee2e2;
-  color: #991b1b;
+.connection-badge.offline {
+  background: #fcebea;
+  color: #a63c36;
 }
 
-.status-dot {
+.connection-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: currentColor;
 }
 
-.control-section {
-  margin-top: 24px;
+/* ============================================================
+   SECTION
+============================================================ */
+
+.page-section {
+  width: 100%;
 }
 
-.control-section h3 {
+.section-heading {
+  margin-bottom: 20px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.section-heading p {
+  margin: 5px 0 0;
+  color: #748078;
+  font-size: 14px;
+}
+
+/* ============================================================
+   SENSOR GRID
+============================================================ */
+
+.sensor-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* ============================================================
+   SENSOR CARD
+============================================================ */
+
+.sensor-card {
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 150px;
+  box-shadow:
+    0 4px 18px rgba(24, 44, 31, 0.05);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sensor-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(24, 44, 31, 0.08);
+}
+
+.sensor-card h3 {
+  margin: 0;
+  font-size: 13px;
+  color: #68756d;
+  font-weight: 700;
+}
+
+.sensor-card .value {
+  margin-top: 18px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.sensor-card .unit {
+  margin-left: 4px;
+  font-size: 16px;
+  color: #758179;
+  font-weight: 600;
+}
+
+/* ============================================================
+   STATUS CARD
+============================================================ */
+
+.status-card {
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow:
+    0 4px 18px rgba(24, 44, 31, 0.05);
+}
+
+.status-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.card-eyebrow {
+  display: block;
   margin-bottom: 5px;
-  color: #166534;
+  color: #23834a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
 }
 
-.section-description {
-  margin-bottom: 12px;
-  color: #64748b;
+.status-card-header h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.operation-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.operation-badge span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.operation-badge.idle {
+  background: #eef2ef;
+  color: #657169;
+}
+
+.operation-badge.active {
+  background: #e7f7ed;
+  color: #17733d;
+}
+
+.operation-badge.paused {
+  background: #fff4dc;
+  color: #946600;
+}
+
+.operation-badge.complete {
+  background: #e8f0ff;
+  color: #315c9b;
+}
+
+.operation-badge.safety {
+  background: #fcebea;
+  color: #a63c36;
+}
+
+.status-main {
+  margin-top: 24px;
+  padding: 22px;
+  border-radius: 14px;
+  background: #f7faf8;
+  border: 1px solid #e5ebe7;
+}
+
+.status-main-title {
+  font-size: 26px;
+  font-weight: 850;
+}
+
+.status-subtitle {
+  margin-top: 5px;
+  color: #748078;
   font-size: 13px;
 }
 
-.control-buttons {
+.status-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 20px;
+  overflow: hidden;
+  border: 1px solid #e4e9e5;
+  border-radius: 14px;
+  background: #e4e9e5;
+}
+
+.status-item {
+  background: #ffffff;
+  padding: 17px;
+  min-height: 78px;
+}
+
+.status-item span {
+  display: block;
+  color: #758078;
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+
+.status-item strong {
+  font-size: 16px;
+}
+
+/* ============================================================
+   PROGRESS
+============================================================ */
+
+.progress-section {
+  margin-top: 22px;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.progress-header span {
+  color: #6d7871;
+}
+
+.progress-track {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6ece8;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #2d9657;
+  transition: width 0.4s ease;
+}
+
+/* ============================================================
+   CONTROL CARD
+============================================================ */
+
+.control-card {
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow:
+    0 4px 18px rgba(24, 44, 31, 0.05);
+}
+
+.control-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.control-card-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.control-card-header p {
+  margin: 7px 0 0;
+  color: #718078;
+  font-size: 13px;
+}
+
+.control-connection {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.control-connection span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.control-connection.connected {
+  color: #17733d;
+  background: #e7f7ed;
+}
+
+.control-connection.disconnected {
+  color: #a63c36;
+  background: #fcebea;
+}
+
+/* ============================================================
+   CONTROL GROUP
+============================================================ */
+
+.control-group {
+  margin-top: 28px;
+}
+
+.control-group-title {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.control-group-description {
+  margin-top: 4px;
+  margin-bottom: 13px;
+  color: #758078;
+  font-size: 13px;
+}
+
+.command-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
 .command-button {
-  min-height: 48px;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  background: #f0fdf4;
-  color: #166534;
-  font-weight: 800;
+  min-height: 52px;
+  border: 1px solid #cfe6d6;
+  border-radius: 11px;
+  background: #f1faf4;
+  color: #176b39;
+  font-size: 13px;
+  font-weight: 850;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
 .command-button:hover {
-  background: #dcfce7;
+  background: #e3f5e9;
   transform: translateY(-1px);
 }
 
 .command-button:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .command-button:disabled {
@@ -104,56 +461,171 @@
 }
 
 .command-button.danger {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #b91c1c;
+  border-color: #f0caca;
+  background: #fff5f4;
+  color: #a63c36;
 }
 
 .command-button.danger:hover {
-  background: #fee2e2;
+  background: #fde9e7;
 }
 
-.command-status {
-  margin-top: 24px;
-  padding: 15px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+/* ============================================================
+   COMMAND INFO
+============================================================ */
+
+.command-info {
+  margin-top: 25px;
+  padding: 16px;
+  border: 1px solid #e4e9e5;
+  border-radius: 13px;
+  background: #f8faf9;
 }
 
-.command-status div {
+.command-info-row {
   display: flex;
   justify-content: space-between;
-  padding: 5px 0;
+  gap: 20px;
+  padding: 6px 0;
   font-size: 13px;
 }
 
-.command-status span {
-  color: #64748b;
+.command-info-row span {
+  color: #718078;
 }
 
-.command-status strong {
-  color: #111827;
+.command-info-row strong {
+  font-weight: 800;
 }
 
-.command-status p {
+.command-message {
   margin-top: 10px;
-  color: #64748b;
+  color: #5d6961;
   font-size: 12px;
 }
 
-@media (max-width: 700px) {
-  .control-header {
-    flex-direction: column;
+/* ============================================================
+   SETTINGS
+============================================================ */
+
+.settings-card {
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 16px;
+  padding: 10px 20px;
+  box-shadow:
+    0 4px 18px rgba(24, 44, 31, 0.05);
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid #edf0ee;
+}
+
+.setting-row:last-child {
+  border-bottom: 0;
+}
+
+.setting-row span {
+  color: #718078;
+}
+
+.setting-row strong {
+  text-align: right;
+}
+
+.text-online {
+  color: #17733d;
+}
+
+.text-offline {
+  color: #a63c36;
+}
+
+/* ============================================================
+   CHART
+============================================================ */
+
+.temperature-chart {
+  margin-top: 20px;
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1100px) {
+  .sensor-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
-  .control-buttons {
-    grid-template-columns: repeat(2, 1fr);
+  .status-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .command-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 450px) {
-  .control-buttons {
+@media (max-width: 760px) {
+  .app-shell {
+    display: block;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .page-header h1 {
+    font-size: 26px;
+  }
+
+  .sensor-grid {
     grid-template-columns: 1fr;
+  }
+
+  .status-card-header,
+  .control-card-header {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 500px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .command-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-card,
+  .control-card {
+    padding: 17px;
+  }
+
+  .setting-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .setting-row strong {
+    text-align: left;
   }
 }
