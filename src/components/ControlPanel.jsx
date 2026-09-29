@@ -14,8 +14,6 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 
-import "./ControlPanel.css";
-
 // ============================================================
 // FIREBASE CONFIG
 // ============================================================
