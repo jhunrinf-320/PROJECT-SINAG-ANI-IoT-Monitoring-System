@@ -1,48 +1,35 @@
+// src/firebase/firebaseConfig.js
+
 import { initializeApp } from "firebase/app";
 import {
   getDatabase,
   ref,
   onValue,
-  set,
+  set
 } from "firebase/database";
+
 import {
   getAuth,
   signInAnonymously,
-  onAuthStateChanged,
+  onAuthStateChanged
 } from "firebase/auth";
-
-// ==========================================
-// FIREBASE CONFIGURATION
-// ==========================================
 
 const firebaseConfig = {
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
   authDomain: "sinag-ani-iot.firebaseapp.com",
-  databaseURL:
-    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
+  databaseURL: "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "sinag-ani-iot",
   storageBucket: "sinag-ani-iot.firebasestorage.app",
   messagingSenderId: "505006165687",
   appId: "1:505006165687:web:8d930c2a846a978a41c732",
-  measurementId: "G-F1YD6L3XNL",
+  measurementId: "G-F1YD6L3XNL"
 };
-
-// ==========================================
-// INITIALIZE FIREBASE
-// ==========================================
 
 const app = initializeApp(firebaseConfig);
 
-// ==========================================
-// SERVICES
-// ==========================================
-
 const database = getDatabase(app);
-const auth = getAuth(app);
 
-// ==========================================
-// EXPORTS
-// ==========================================
+const auth = getAuth(app);
 
 export {
   app,
@@ -52,7 +39,7 @@ export {
   onValue,
   set,
   signInAnonymously,
-  onAuthStateChanged,
+  onAuthStateChanged
 };
 
 export default app;
