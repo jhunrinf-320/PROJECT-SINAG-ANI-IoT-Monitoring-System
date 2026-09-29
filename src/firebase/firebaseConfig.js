@@ -1,19 +1,6 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-} from "firebase/database";
-import {
-  getAuth,
-  signInAnonymously,
-  onAuthStateChanged,
-} from "firebase/auth";
-
-// ==========================================
-// FIREBASE CONFIGURATION
-// ==========================================
+import { initializeApp } from "firebase/app";
+import { getDatabase } from "firebase/database";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
@@ -27,40 +14,14 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL",
 };
 
-// ==========================================
-// INITIALIZE FIREBASE
-// ==========================================
-
-const app =
-  getApps().length > 0
-    ? getApp()
-    : initializeApp(firebaseConfig);
-
-// ==========================================
-// FIREBASE DATABASE
-// ==========================================
+const app = initializeApp(firebaseConfig);
 
 const database = getDatabase(app);
 
-// ==========================================
-// FIREBASE AUTH
-// ==========================================
-
 const auth = getAuth(app);
-
-// ==========================================
-// EXPORT EVERYTHING NEEDED
-// ==========================================
 
 export {
   app,
   database,
   auth,
-  ref,
-  onValue,
-  set,
-  signInAnonymously,
-  onAuthStateChanged,
 };
-
-export default app;
