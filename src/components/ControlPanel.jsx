@@ -1,169 +1,199 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  initializeApp,
-  getApps,
-} from "firebase/app";
-
-import {
-  getDatabase,
-  ref,
-  set,
-} from "firebase/database";
-
+import { ref, set, onValue } from "firebase/database";
 import {
   getAuth,
   signInAnonymously,
+  onAuthStateChanged,
 } from "firebase/auth";
 
-// ==========================================
-// FIREBASE CONFIG
-// ==========================================
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
-  authDomain: "sinag-ani-iot.firebaseapp.com",
-  databaseURL:
-    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "sinag-ani-iot",
-  storageBucket:
-    "sinag-ani-iot.firebasestorage.app",
-  messagingSenderId: "505006165687",
-  appId: "1:505006165687:web:8d930c2a846a978a41c732",
-  measurementId: "G-F1YD6L3XNL",
-};
-
-// ==========================================
-// FIREBASE INITIALIZATION
-// ==========================================
-
-const app = getApps().length
-  ? getApps()[0]
-  : initializeApp(firebaseConfig);
-
-const database = getDatabase(app);
-const auth = getAuth(app);
-
-// ==========================================
-// CONTROL PANEL
-// ==========================================
+import { database, auth } from "../firebase/firebaseConfig";
 
 function ControlPanel() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [currentCommand, setCurrentCommand] = useState("IDLE");
+  const [lastSent, setLastSent] = useState("NONE");
+  const [message, setMessage] = useState("Connecting to Firebase...");
+  const [sending, setSending] = useState(false);
 
-  const [currentCommand, setCurrentCommand] =
-    useState("IDLE");
+  const commandRef = ref(
+    database,
+    "devices/device001/control/mode"
+  );
 
-  const [message, setMessage] =
-    useState("Ready");
+  // ==========================================================
+  // FIREBASE AUTHENTICATION
+  // ==========================================================
 
-  const [loading, setLoading] =
-    useState(false);
+  useEffect(() => {
+    let mounted = true;
 
-  // ========================================
-  // SEND FIREBASE COMMAND
-  // ========================================
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (user) => {
+        if (user) {
+          if (mounted) {
+            setAuthenticated(true);
+            setMessage("Firebase connected.");
+          }
+          return;
+        }
 
-  const command = async (mode) => {
+        try {
+          await signInAnonymously(auth);
 
-    console.log(
-      "================================"
+          if (mounted) {
+            setAuthenticated(true);
+            setMessage("Firebase connected.");
+          }
+        } catch (error) {
+          console.error(
+            "Firebase authentication failed:",
+            error
+          );
+
+          if (mounted) {
+            setAuthenticated(false);
+            setMessage(
+              "Firebase authentication failed."
+            );
+          }
+        }
+      }
     );
 
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // ==========================================================
+  // LISTEN TO COMMAND PATH
+  // ==========================================================
+
+  useEffect(() => {
+    const unsubscribe = onValue(
+      commandRef,
+      (snapshot) => {
+        const value = snapshot.val();
+
+        if (value !== null) {
+          setCurrentCommand(String(value));
+          console.log(
+            "Firebase command path:",
+            value
+          );
+        }
+      },
+      (error) => {
+        console.error(
+          "Command listener error:",
+          error
+        );
+
+        setMessage(
+          "Cannot read Firebase command path."
+        );
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // ==========================================================
+  // SEND COMMAND TO ESP32
+  // ==========================================================
+
+  const sendCommand = async (command) => {
+    console.log("--------------------------------");
     console.log(
       "SINAG-ANI COMMAND:",
-      mode
+      command
+    );
+    console.log(
+      "PATH:",
+      "devices/device001/control/mode"
     );
 
-    setLoading(true);
-
+    setSending(true);
     setMessage(
-      `Sending ${mode}...`
+      `Sending ${command}...`
     );
 
     try {
+      // Make absolutely sure the website is authenticated.
+      if (!auth.currentUser) {
+        console.log(
+          "No Firebase user. Signing in..."
+        );
 
-      // ------------------------------------
-      // AUTHENTICATION
-      // ------------------------------------
+        await signInAnonymously(auth);
+      }
 
-      console.log(
-        "Authenticating Firebase..."
-      );
-
-      await signInAnonymously(auth);
-
-      console.log(
-        "Firebase authentication successful."
-      );
-
-      // ------------------------------------
-      // FIREBASE COMMAND PATH
-      // ------------------------------------
-
-      const commandRef = ref(
-        database,
-        "devices/device001/control/mode"
-      );
-
-      // ------------------------------------
-      // WRITE COMMAND
-      // ------------------------------------
-
-      await set(
-        commandRef,
-        mode
-      );
+      if (!auth.currentUser) {
+        throw new Error(
+          "Firebase authentication failed."
+        );
+      }
 
       console.log(
-        "Firebase command sent:",
-        mode
+        "Authenticated UID:",
+        auth.currentUser.uid
       );
 
-      // ------------------------------------
-      // UPDATE WEBSITE
-      // ------------------------------------
+      // ======================================================
+      // ACTUAL COMMAND
+      // ======================================================
 
-      setCurrentCommand(mode);
+      await set(commandRef, command);
 
+      console.log(
+        "COMMAND SUCCESSFULLY WRITTEN:",
+        command
+      );
+
+      setLastSent(command);
       setMessage(
-        `${mode} command sent successfully.`
+        `${command} command sent to ESP32.`
       );
 
     } catch (error) {
-
       console.error(
-        "Firebase command error:",
+        "COMMAND FAILED:",
         error
       );
 
       setMessage(
-        `ERROR: ${error.message}`
+        `Command failed: ${error.message}`
       );
-
     } finally {
-
-      setLoading(false);
-
+      setSending(false);
     }
   };
 
-  // ========================================
-  // BUTTON COMPONENT
-  // ========================================
+  // ==========================================================
+  // BUTTON
+  // ==========================================================
 
-  const ControlButton = ({
+  const CommandButton = ({
     label,
-    commandValue,
-    className = "",
+    command,
+    danger = false,
   }) => {
-
     return (
       <button
         type="button"
-        className={className}
-        disabled={loading}
+        className={
+          danger
+            ? "command-button danger"
+            : "command-button"
+        }
+        disabled={
+          sending || !authenticated
+        }
         onClick={() =>
-          command(commandValue)
+          sendCommand(command)
         }
       >
         {label}
@@ -171,139 +201,152 @@ function ControlPanel() {
     );
   };
 
-  // ========================================
+  // ==========================================================
   // UI
-  // ========================================
+  // ==========================================================
 
   return (
+    <div className="control-panel">
 
-    <section className="control-panel">
-
-      <h2>
-        Drying Control
-      </h2>
-
-      <p>
-        Control the SINAG-ANI drying
-        operation.
-      </p>
-
-
-      {/* ==================================
-          AUTOMATIC DRYING
-          ================================== */}
-
-      <h3
-        style={{
-          marginTop: "20px",
-          marginBottom: "10px",
-          color: "#166534",
-        }}
-      >
-        Automatic Drying
-      </h3>
-
-      <div className="control-buttons">
-
-        <ControlButton
-          label="START"
-          commandValue="START"
-        />
-
-        <ControlButton
-          label="PAUSE"
-          commandValue="PAUSE"
-        />
-
-        <ControlButton
-          label="RESUME"
-          commandValue="RESUME"
-        />
-
-        <ControlButton
-          label="STOP"
-          commandValue="STOP"
-          className="stop-button"
-        />
-
-      </div>
-
-
-      {/* ==================================
-          MANUAL FAN CONTROL
-          ================================== */}
-
-      <h3
-        style={{
-          marginTop: "24px",
-          marginBottom: "10px",
-          color: "#166534",
-        }}
-      >
-        Manual Fan Control
-      </h3>
-
-      <div className="control-buttons">
-
-        <ControlButton
-          label="HIGH"
-          commandValue="HIGH"
-        />
-
-        <ControlButton
-          label="MODERATE-HIGH"
-          commandValue="MODERATE-HIGH"
-        />
-
-        <ControlButton
-          label="MODERATE"
-          commandValue="MODERATE"
-        />
-
-        <ControlButton
-          label="OFF"
-          commandValue="OFF"
-          className="stop-button"
-        />
-
-      </div>
-
-
-      {/* ==================================
-          CURRENT COMMAND
-          ================================== */}
-
-      <div
-        style={{
-          marginTop: "18px",
-          padding: "12px 14px",
-          borderRadius: "10px",
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
-          fontSize: "13px",
-        }}
-      >
-
+      <div className="control-header">
         <div>
-          <strong>
-            Last Command:
-          </strong>{" "}
+          <h2>Drying Control</h2>
 
-          {currentCommand}
+          <p>
+            Send commands directly to the
+            SINAG-ANI ESP32 through Firebase.
+          </p>
         </div>
 
         <div
-          style={{
-            marginTop: "5px",
-            color: "#64748b",
-          }}
+          className={
+            authenticated
+              ? "firebase-status connected"
+              : "firebase-status disconnected"
+          }
         >
-          {message}
+          <span className="status-dot"></span>
+
+          {authenticated
+            ? "FIREBASE CONNECTED"
+            : "FIREBASE DISCONNECTED"}
         </div>
+      </div>
+
+      {/* ====================================================
+          AUTOMATIC DRYING
+      ==================================================== */}
+
+      <div className="control-section">
+
+        <h3>
+          Automatic Drying
+        </h3>
+
+        <p className="section-description">
+          Control the complete multi-stage
+          drying cycle.
+        </p>
+
+        <div className="control-buttons">
+
+          <CommandButton
+            label="START"
+            command="START"
+          />
+
+          <CommandButton
+            label="PAUSE"
+            command="PAUSE"
+          />
+
+          <CommandButton
+            label="RESUME"
+            command="RESUME"
+          />
+
+          <CommandButton
+            label="STOP"
+            command="STOP"
+            danger
+          />
+
+        </div>
+      </div>
+
+      {/* ====================================================
+          MANUAL FAN CONTROL
+      ==================================================== */}
+
+      <div className="control-section">
+
+        <h3>
+          Manual Fan Control
+        </h3>
+
+        <p className="section-description">
+          Directly select the fan operating level.
+        </p>
+
+        <div className="control-buttons">
+
+          <CommandButton
+            label="HIGH"
+            command="HIGH"
+          />
+
+          <CommandButton
+            label="MODERATE-HIGH"
+            command="MODERATE-HIGH"
+          />
+
+          <CommandButton
+            label="MODERATE"
+            command="MODERATE"
+          />
+
+          <CommandButton
+            label="OFF"
+            command="OFF"
+            danger
+          />
+
+        </div>
+      </div>
+
+      {/* ====================================================
+          COMMAND DEBUG
+      ==================================================== */}
+
+      <div className="command-status">
+
+        <div>
+          <span>
+            Last sent:
+          </span>
+
+          <strong>
+            {lastSent}
+          </strong>
+        </div>
+
+        <div>
+          <span>
+            Firebase value:
+          </span>
+
+          <strong>
+            {currentCommand}
+          </strong>
+        </div>
+
+        <p>
+          {message}
+        </p>
 
       </div>
 
-    </section>
+    </div>
   );
 }
 
