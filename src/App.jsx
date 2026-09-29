@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
-import { initializeApp, getApps } from "firebase/app";
-import { getDatabase, ref, onValue } from "firebase/database";
+
+import {
+  initializeApp,
+  getApps,
+} from "firebase/app";
+
+import {
+  getDatabase,
+  ref,
+  onValue,
+} from "firebase/database";
+
 import {
   getAuth,
   onAuthStateChanged,
@@ -12,7 +22,10 @@ import SensorCard from "./components/SensorCard";
 import StatusCard from "./components/StatusCard";
 import ControlPanel from "./components/ControlPanel";
 import TemperatureChart from "./components/TemperatureChart";
-import "./index.css";
+
+// ============================================================
+// FIREBASE
+// ============================================================
 
 const firebaseConfig = {
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
@@ -26,132 +39,105 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL",
 };
 
-const firebaseApp = getApps().length
-  ? getApps()[0]
-  : initializeApp(firebaseConfig);
+const firebaseApp =
+  getApps().length > 0
+    ? getApps()[0]
+    : initializeApp(firebaseConfig);
 
 const database = getDatabase(firebaseApp);
 const auth = getAuth(firebaseApp);
 
-function isValidNumber(value) {
-  return typeof value === "number" && Number.isFinite(value);
-}
+const DEVICE_PATH = "devices/device001";
 
-function normalizeHistory(snapshotValue) {
-  if (!snapshotValue || typeof snapshotValue !== "object") {
-    return [];
-  }
-
-  return Object.entries(snapshotValue)
-    .map(([key, item]) => {
-      const timestamp = Number(item?.timestamp);
-
-      const time = Number.isFinite(timestamp)
-        ? new Date(timestamp).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })
-        : new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          });
-
-      const temp1Value = Number(item?.temp1);
-      const temp2Value = Number(item?.temp2);
-
-      return {
-        key,
-        timestamp: Number.isFinite(timestamp) ? timestamp : 0,
-        time,
-        temp1: isValidNumber(temp1Value) ? temp1Value : null,
-        temp2: isValidNumber(temp2Value) ? temp2Value : null,
-      };
-    })
-    .filter(
-      (item) => item.temp1 !== null || item.temp2 !== null
-    )
-    .sort((a, b) => a.timestamp - b.timestamp)
-    .slice(-30);
-}
+// ============================================================
+// APP
+// ============================================================
 
 function App() {
   const [device, setDevice] = useState({});
   const [history, setHistory] = useState([]);
-  const [activePage, setActivePage] = useState("Dashboard");
-  const [firebaseOnline, setFirebaseOnline] = useState(false);
+  const [activePage, setActivePage] =
+    useState("Dashboard");
+
+  const [firebaseOnline, setFirebaseOnline] =
+    useState(false);
+
+  // ==========================================================
+  // FIREBASE AUTH + DEVICE LISTENER
+  // ==========================================================
 
   useEffect(() => {
     let unsubscribeDevice = null;
-    let unsubscribeHistory = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setFirebaseOnline(false);
-        setDevice({});
-        setHistory([]);
+    const unsubscribeAuth =
+      onAuthStateChanged(
+        auth,
+        async (user) => {
+          try {
+            if (!user) {
+              await signInAnonymously(auth);
+              return;
+            }
 
-        signInAnonymously(auth).catch((error) => {
-          console.error(
-            "Anonymous authentication failed:",
-            error
-          );
-        });
+            setFirebaseOnline(true);
 
-        return;
-      }
+            const deviceRef = ref(
+              database,
+              DEVICE_PATH
+            );
 
-      setFirebaseOnline(true);
+            unsubscribeDevice = onValue(
+              deviceRef,
+              (snapshot) => {
+                const data = snapshot.val();
 
-      const deviceRef = ref(
-        database,
-        "devices/device001"
-      );
+                if (!data) {
+                  setDevice({});
+                  return;
+                }
 
-      const historyRef = ref(
-        database,
-        "devices/device001/history"
-      );
+                setDevice(data);
 
-      unsubscribeDevice = onValue(
-        deviceRef,
-        (snapshot) => {
-          const data = snapshot.val();
+                // ------------------------------
+                // Temperature history
+                // ------------------------------
 
-          if (data) {
-            setDevice(data);
+                const temp1 =
+                  data?.sensors?.temp1;
+
+                if (
+                  typeof temp1 === "number" &&
+                  Number.isFinite(temp1)
+                ) {
+                  setHistory((previous) => [
+                    ...previous.slice(-19),
+                    {
+                      time:
+                        new Date().toLocaleTimeString(),
+                      temp: temp1,
+                    },
+                  ]);
+                }
+              },
+              (error) => {
+                console.error(
+                  "Firebase device listener error:",
+                  error
+                );
+
+                setFirebaseOnline(false);
+              }
+            );
+          } catch (error) {
+            console.error(
+              "Firebase authentication error:",
+              error
+            );
+
+            setFirebaseOnline(false);
           }
-        },
-        (error) => {
-          console.error(
-            "Firebase device listener error:",
-            error
-          );
-
-          setFirebaseOnline(false);
         }
       );
-
-      unsubscribeHistory = onValue(
-        historyRef,
-        (snapshot) => {
-          const data = normalizeHistory(
-            snapshot.val()
-          );
-
-          if (data.length) {
-            setHistory(data);
-          }
-        },
-        (error) => {
-          console.error(
-            "Firebase history listener error:",
-            error
-          );
-        }
-      );
-    });
 
     return () => {
       unsubscribeAuth();
@@ -159,97 +145,104 @@ function App() {
       if (unsubscribeDevice) {
         unsubscribeDevice();
       }
-
-      if (unsubscribeHistory) {
-        unsubscribeHistory();
-      }
     };
   }, []);
 
-  const temp1 = device?.sensors?.temp1;
-  const temp2 = device?.sensors?.temp2;
-  const humidity = device?.sensors?.humidity;
+  // ==========================================================
+  // SENSOR DATA
+  // ==========================================================
+
+  const sensors = device?.sensors || {};
+  const status = device?.status || {};
+
+  const temp1 = sensors?.temp1;
+  const temp2 = sensors?.temp2;
+  const humidity = sensors?.humidity;
   const dht11Temperature =
-    device?.sensors?.dht11Temperature;
+    sensors?.dht11Temperature;
+
+  // ==========================================================
+  // DEVICE ONLINE
+  // ==========================================================
 
   const deviceOnline =
-    device?.status?.online === true ||
-    device?.status?.online === 1 ||
-    device?.status?.online === "1";
+    status?.online === true ||
+    status?.online === 1 ||
+    status?.online === "1";
 
-  const displayOnline =
-    deviceOnline && firebaseOnline;
+  const systemOnline =
+    firebaseOnline && deviceOnline;
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
-    <div className="layout">
+    <div className="app-shell">
 
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
       />
 
-      <main>
+      <main className="main-content">
 
-        {/* HEADER */}
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
         <header className="page-header">
 
           <div>
-            <p className="eyebrow">
-              IoT DRYER SYSTEM
-            </p>
+            <div className="brand-small">
+              🌾 SINAG-ANI
+            </div>
 
             <h1>
-              SINAG-ANI Dashboard
+              IoT Dryer System
             </h1>
 
-            <p className="page-subtitle">
-              Real-time monitoring and multi-stage
-              drying control
+            <p>
+              Real-time monitoring and
+              multi-stage drying control
             </p>
           </div>
 
           <div
             className={
-              displayOnline
-                ? "connection online"
-                : "connection offline"
+              systemOnline
+                ? "connection-badge online"
+                : "connection-badge offline"
             }
           >
-            <span className="connection-dot" />
+            <span className="connection-dot"></span>
 
-            {displayOnline
+            {systemOnline
               ? "DEVICE ONLINE"
               : "DEVICE OFFLINE"}
           </div>
 
         </header>
 
-
-        {/* DASHBOARD */}
+        {/* ==================================================
+            DASHBOARD
+        ================================================== */}
 
         {activePage === "Dashboard" && (
-          <>
+          <section className="page-section">
 
-            <section className="section-heading">
-
+            <div className="section-heading">
               <div>
-
-                <h2>
-                  System Overview
-                </h2>
+                <h2>System Overview</h2>
 
                 <p>
                   Current sensor readings and
                   drying operation.
                 </p>
-
               </div>
+            </div>
 
-            </section>
-
-
-            <div className="cards">
+            <div className="sensor-grid">
 
               <SensorCard
                 title="Temperature Sensor 1"
@@ -280,60 +273,51 @@ function App() {
               />
 
             </div>
-
 
             <StatusCard
-              mode={device?.status?.mode}
-              pwm={device?.status?.pwm}
-              stage={device?.status?.stage}
-              online={device?.status?.online}
-              automatic={device?.status?.automatic}
-              paused={device?.status?.paused}
+              mode={status?.mode}
+              pwm={status?.pwm}
+              stage={status?.stage}
+              online={status?.online}
+              automatic={status?.automatic}
+              paused={status?.paused}
               stageElapsedSeconds={
-                device?.status?.stageElapsedSeconds
+                status?.stageElapsedSeconds
               }
               stageRemainingSeconds={
-                device?.status?.stageRemainingSeconds
+                status?.stageRemainingSeconds
               }
               totalElapsedSeconds={
-                device?.status?.totalElapsedSeconds
+                status?.totalElapsedSeconds
               }
               totalRemainingSeconds={
-                device?.status?.totalRemainingSeconds
+                status?.totalRemainingSeconds
               }
-              coolFan={
-                device?.status?.coolFan
-              }
+              coolFan={status?.coolFan}
             />
 
-          </>
+          </section>
         )}
 
-
-        {/* MONITORING */}
+        {/* ==================================================
+            MONITORING
+        ================================================== */}
 
         {activePage === "Monitoring" && (
-          <>
+          <section className="page-section">
 
-            <section className="section-heading">
-
+            <div className="section-heading">
               <div>
-
-                <h2>
-                  Sensor Monitoring
-                </h2>
+                <h2>Sensor Monitoring</h2>
 
                 <p>
-                  Temperature history from the
-                  SINAG-ANI controller.
+                  Live readings from the
+                  SINAG-ANI sensors.
                 </p>
-
               </div>
+            </div>
 
-            </section>
-
-
-            <div className="cards">
+            <div className="sensor-grid">
 
               <SensorCard
                 title="Temperature Sensor 1"
@@ -364,116 +348,98 @@ function App() {
               />
 
             </div>
-
 
             <TemperatureChart
               data={history}
             />
 
-          </>
+          </section>
         )}
 
-
-        {/* CONTROL */}
+        {/* ==================================================
+            CONTROL
+        ================================================== */}
 
         {activePage === "Control" && (
-          <>
+          <section className="page-section">
 
-            <section className="section-heading">
-
+            <div className="section-heading">
               <div>
-
-                <h2>
-                  Drying Control
-                </h2>
+                <h2>Drying Control</h2>
 
                 <p>
-                  Control the current drying
-                  mode of SINAG-ANI.
+                  Send commands directly to
+                  the SINAG-ANI ESP32.
                 </p>
-
               </div>
-
-            </section>
+            </div>
 
             <ControlPanel />
 
-          </>
+          </section>
         )}
 
-
-        {/* SETTINGS */}
+        {/* ==================================================
+            SETTINGS
+        ================================================== */}
 
         {activePage === "Settings" && (
+          <section className="page-section">
 
-          <section className="settings-box">
-
-            <div className="section-heading compact">
-
+            <div className="section-heading">
               <div>
-
-                <h2>
-                  System Settings
-                </h2>
+                <h2>System Settings</h2>
 
                 <p>
-                  Connection and controller
-                  information.
+                  SINAG-ANI device information.
                 </p>
-
               </div>
-
             </div>
 
+            <div className="settings-card">
 
-            <div className="settings-grid">
-
-              <div>
+              <div className="setting-row">
                 <span>Device ID</span>
-                <strong>
-                  device001
-                </strong>
+                <strong>device001</strong>
               </div>
 
-              <div>
-                <span>
-                  Firebase Connection
-                </span>
+              <div className="setting-row">
+                <span>Controller</span>
+                <strong>ESP32</strong>
+              </div>
 
-                <strong>
+              <div className="setting-row">
+                <span>Firebase</span>
+                <strong
+                  className={
+                    firebaseOnline
+                      ? "text-online"
+                      : "text-offline"
+                  }
+                >
                   {firebaseOnline
-                    ? "Active"
+                    ? "Connected"
                     : "Disconnected"}
                 </strong>
               </div>
 
-              <div>
-                <span>
-                  Device Status
-                </span>
-
-                <strong>
+              <div className="setting-row">
+                <span>Device</span>
+                <strong
+                  className={
+                    deviceOnline
+                      ? "text-online"
+                      : "text-offline"
+                  }
+                >
                   {deviceOnline
                     ? "Online"
                     : "Offline"}
                 </strong>
               </div>
 
-              <div>
-                <span>
-                  Controller
-                </span>
-
-                <strong>
-                  ESP32
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Database Path
-                </span>
-
+              <div className="setting-row">
+                <span>Database Path</span>
                 <strong>
                   devices/device001
                 </strong>
@@ -482,11 +448,9 @@ function App() {
             </div>
 
           </section>
-
         )}
 
       </main>
-
     </div>
   );
 }
