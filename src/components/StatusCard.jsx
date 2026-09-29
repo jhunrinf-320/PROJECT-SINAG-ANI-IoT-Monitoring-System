@@ -1,22 +1,42 @@
-function formatTime(seconds) {
-  const total = Math.max(
-    0,
-    Math.floor(Number(seconds) || 0)
+function formatTime(value) {
+  const seconds = Number(value);
+
+  if (
+    !Number.isFinite(seconds) ||
+    seconds <= 0
+  ) {
+    return "00:00:00";
+  }
+
+  const hours = Math.floor(
+    seconds / 3600
   );
 
-  const hours = String(
-    Math.floor(total / 3600)
-  ).padStart(2, "0");
+  const minutes = Math.floor(
+    (seconds % 3600) / 60
+  );
 
-  const minutes = String(
-    Math.floor((total % 3600) / 60)
-  ).padStart(2, "0");
+  const secs = Math.floor(
+    seconds % 60
+  );
 
-  const secs = String(
-    total % 60
-  ).padStart(2, "0");
+  return [
+    hours,
+    minutes,
+    secs,
+  ]
+    .map((number) =>
+      String(number).padStart(2, "0")
+    )
+    .join(":");
+}
 
-  return `${hours}:${minutes}:${secs}`;
+function getNumber(value, fallback = 0) {
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : fallback;
 }
 
 function StatusCard({
@@ -32,186 +52,226 @@ function StatusCard({
   totalRemainingSeconds,
   coolFan,
 }) {
+  const normalizedMode =
+    String(mode || "OFF").toUpperCase();
 
-  const elapsed =
-    Number(stageElapsedSeconds) || 0;
+  const normalizedStage =
+    String(stage || "OFF").toUpperCase();
 
-  const remaining =
-    Number(stageRemainingSeconds) || 0;
+  const isRunning =
+    normalizedStage !== "OFF" &&
+    normalizedStage !== "COMPLETE" &&
+    normalizedStage !== "SAFETY" &&
+    normalizedStage !== "PAUSED";
 
-  const totalRemaining =
-    Number(totalRemainingSeconds) || 0;
+  const isPaused =
+    paused === true ||
+    paused === 1 ||
+    paused === "1" ||
+    normalizedStage === "PAUSED";
+
+  const isComplete =
+    normalizedStage === "COMPLETE";
+
+  const isSafety =
+    normalizedStage === "SAFETY";
+
+  let operation = "IDLE";
+
+  if (isSafety) {
+    operation = "SAFETY";
+  } else if (isComplete) {
+    operation = "COMPLETE";
+  } else if (isPaused) {
+    operation = "PAUSED";
+  } else if (isRunning) {
+    operation = "ACTIVE";
+  }
+
+  const fanPWM = Math.max(
+    0,
+    Math.min(
+      255,
+      getNumber(pwm)
+    )
+  );
+
+  const fanPercent = Math.round(
+    (fanPWM / 255) * 100
+  );
+
+  const stageElapsed =
+    getNumber(stageElapsedSeconds);
+
+  const stageRemaining =
+    getNumber(stageRemainingSeconds);
 
   const totalElapsed =
-    Number(totalElapsedSeconds) || 0;
+    getNumber(totalElapsedSeconds);
 
-  const fanPWM =
-    Number(pwm) || 0;
+  const totalRemaining =
+    getNumber(totalRemainingSeconds);
 
-  const fanPercentage =
-    Math.round((fanPWM / 255) * 100);
+  let progress = 0;
 
-  const stageProgress =
-    elapsed + remaining > 0
-      ? Math.min(
-          100,
-          Math.round(
-            (elapsed /
-              (elapsed + remaining)) *
-              100
-          )
-        )
-      : 0;
+  const stageTotal =
+    stageElapsed + stageRemaining;
+
+  if (stageTotal > 0) {
+    progress =
+      (stageElapsed / stageTotal) * 100;
+  }
+
+  progress = Math.max(
+    0,
+    Math.min(100, progress)
+  );
+
+  const coolFanOn =
+    coolFan === true ||
+    coolFan === 1 ||
+    coolFan === "1" ||
+    String(coolFan).toUpperCase() === "ON";
+
+  const operationClass =
+    operation.toLowerCase();
 
   return (
+    <div className="status-card">
 
-    <section className="status-card">
+      {/* ====================================================
+          HEADER
+      ==================================================== */}
 
-      <div className="status-title">
+      <div className="status-card-header">
 
         <div>
+          <span className="card-eyebrow">
+            DRYING STATUS
+          </span>
 
           <h2>
-            Drying Status
-          </h2>
-
-          <p>
             Current SINAG-ANI operation
-          </p>
-
+          </h2>
         </div>
 
-        <span className="mode-badge">
-          {mode || "IDLE"}
-        </span>
+        <div
+          className={`operation-badge ${operationClass}`}
+        >
+          <span></span>
+          {operation}
+        </div>
 
       </div>
 
+      {/* ====================================================
+          MAIN STATUS
+      ==================================================== */}
+
+      <div className="status-main">
+
+        <div className="status-main-title">
+          {operation}
+        </div>
+
+        <div className="status-subtitle">
+          {online
+            ? "ESP32 is connected to Firebase"
+            : "Waiting for ESP32 connection"}
+        </div>
+
+      </div>
+
+      {/* ====================================================
+          STATUS GRID
+      ==================================================== */}
 
       <div className="status-grid">
 
         <div className="status-item">
           <span>Mode</span>
           <strong>
-            {mode || "OFF"}
+            {normalizedMode}
           </strong>
         </div>
-
 
         <div className="status-item">
           <span>Stage</span>
           <strong>
-            {stage || "OFF"}
+            {normalizedStage}
           </strong>
         </div>
 
-
         <div className="status-item">
-          <span>
-            Stage Time Remaining
-          </span>
-
+          <span>Stage Time Remaining</span>
           <strong>
-            {formatTime(remaining)}
+            {formatTime(stageRemaining)}
           </strong>
         </div>
 
-
         <div className="status-item">
-          <span>
-            Total Time Remaining
-          </span>
-
+          <span>Total Time Remaining</span>
           <strong>
             {formatTime(totalRemaining)}
           </strong>
         </div>
 
-
         <div className="status-item">
-          <span>
-            Total Elapsed
-          </span>
-
+          <span>Total Elapsed</span>
           <strong>
             {formatTime(totalElapsed)}
           </strong>
         </div>
 
-
         <div className="status-item">
-          <span>
-            Main Fan
-          </span>
-
+          <span>Main Fan</span>
           <strong>
             {fanPWM}/255
           </strong>
         </div>
 
-
         <div className="status-item">
-          <span>
-            Main Fan Power
-          </span>
-
+          <span>Main Fan Power</span>
           <strong>
-            {fanPercentage}%
+            {fanPercent}%
           </strong>
         </div>
 
-
         <div className="status-item">
-          <span>
-            Cool-Air Fan
-          </span>
-
+          <span>Cool-Air Fan</span>
           <strong>
-            {coolFan ? "ON" : "OFF"}
-          </strong>
-        </div>
-
-
-        <div className="status-item">
-          <span>
-            Operation
-          </span>
-
-          <strong>
-            {paused
-              ? "PAUSED"
-              : automatic
-              ? "AUTOMATIC"
-              : online
-              ? "ACTIVE"
-              : "IDLE"}
+            {coolFanOn
+              ? "ON"
+              : "OFF"}
           </strong>
         </div>
 
       </div>
 
+      {/* ====================================================
+          PROGRESS
+      ==================================================== */}
 
-      <div className="status-progress">
+      <div className="progress-section">
 
-        <div className="progress-label">
+        <div className="progress-header">
 
           <span>
             Current stage progress
           </span>
 
-          <span>
-            {stageProgress}%
-          </span>
+          <strong>
+            {Math.round(progress)}%
+          </strong>
 
         </div>
-
 
         <div className="progress-track">
 
           <div
             className="progress-fill"
             style={{
-              width: `${stageProgress}%`,
+              width: `${progress}%`,
             }}
           />
 
@@ -219,7 +279,7 @@ function StatusCard({
 
       </div>
 
-    </section>
+    </div>
   );
 }
 
