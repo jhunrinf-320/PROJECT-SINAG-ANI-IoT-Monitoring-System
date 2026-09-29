@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from "react";
+
 import { initializeApp } from "firebase/app";
+
 import {
   getDatabase,
   ref,
   onValue,
-  set
+  set,
 } from "firebase/database";
+
 import {
   getAuth,
   signInAnonymously,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "firebase/auth";
 
-import "./App.css";
 
 // =====================================================
 // FIREBASE
@@ -27,7 +29,7 @@ const firebaseConfig = {
   storageBucket: "sinag-ani-iot.firebasestorage.app",
   messagingSenderId: "505006165687",
   appId: "1:505006165687:web:8d930c2a846a978a41c732",
-  measurementId: "G-F1YD6L3XNL"
+  measurementId: "G-F1YD6L3XNL",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
@@ -36,6 +38,7 @@ const auth = getAuth(firebaseApp);
 
 const DEVICE_PATH = "devices/device001";
 
+
 // =====================================================
 // APP
 // =====================================================
@@ -43,83 +46,109 @@ const DEVICE_PATH = "devices/device001";
 function App() {
   const [activePage, setActivePage] = useState("Dashboard");
 
-  const [device, setDevice] = useState({});
-  const [firebaseOnline, setFirebaseOnline] = useState(false);
+  const [deviceData, setDeviceData] = useState({});
 
-  const [sending, setSending] = useState(false);
-  const [commandMessage, setCommandMessage] = useState("");
+  const [firebaseConnected, setFirebaseConnected] =
+    useState(false);
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sendingCommand, setSendingCommand] =
+    useState(false);
+
+  const [commandMessage, setCommandMessage] =
+    useState("");
 
   // ===================================================
-  // FIREBASE AUTH + REALTIME DATA
+  // FIREBASE
   // ===================================================
 
   useEffect(() => {
-    let unsubscribeDevice = null;
+    let unsubscribeDatabase = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setFirebaseOnline(false);
+    const unsubscribeAuth = onAuthStateChanged(
+      auth,
+      (user) => {
+        if (!user) {
+          setFirebaseConnected(false);
 
-        signInAnonymously(auth)
-          .then(() => {
-            console.log("Firebase anonymous authentication successful.");
-          })
-          .catch((error) => {
-            console.error("Firebase authentication failed:", error);
-            setFirebaseOnline(false);
-          });
+          signInAnonymously(auth)
+            .then(() => {
+              console.log(
+                "Firebase anonymous authentication successful."
+              );
+            })
+            .catch((error) => {
+              console.error(
+                "Firebase authentication error:",
+                error
+              );
+            });
 
-        return;
-      }
-
-      setFirebaseOnline(true);
-
-      const deviceRef = ref(database, DEVICE_PATH);
-
-      unsubscribeDevice = onValue(
-        deviceRef,
-        (snapshot) => {
-          const data = snapshot.val();
-
-          if (data) {
-            setDevice(data);
-          }
-        },
-        (error) => {
-          console.error("Firebase database error:", error);
-          setFirebaseOnline(false);
+          return;
         }
-      );
-    });
+
+        console.log("Firebase authenticated.");
+
+        setFirebaseConnected(true);
+
+        const deviceRef = ref(
+          database,
+          DEVICE_PATH
+        );
+
+        unsubscribeDatabase = onValue(
+          deviceRef,
+          (snapshot) => {
+            const data = snapshot.val();
+
+            if (data) {
+              setDeviceData(data);
+            }
+          },
+          (error) => {
+            console.error(
+              "Firebase database error:",
+              error
+            );
+
+            setFirebaseConnected(false);
+          }
+        );
+      }
+    );
 
     return () => {
       unsubscribeAuth();
 
-      if (unsubscribeDevice) {
-        unsubscribeDevice();
+      if (unsubscribeDatabase) {
+        unsubscribeDatabase();
       }
     };
   }, []);
 
+
   // ===================================================
-  // DATA
+  // SENSOR / DEVICE DATA
   // ===================================================
 
-  const sensors = device?.sensors || {};
-  const control = device?.control || {};
+  const sensors = deviceData?.sensors || {};
+  const control = deviceData?.control || {};
 
-  const temp1 = sensors?.temp1 ?? "--";
-  const temp2 = sensors?.temp2 ?? "--";
+  const temperature1 = sensors?.temp1 ?? "--";
+  const temperature2 = sensors?.temp2 ?? "--";
   const humidity = sensors?.humidity ?? "--";
 
   const deviceOnline =
     sensors?.online === true ||
-    device?.online === true;
+    deviceData?.online === true;
 
-  const mode = sensors?.mode ?? control?.mode ?? "OFF";
-  const stage = sensors?.stage ?? "OFF";
+  const mode =
+    sensors?.mode ??
+    control?.mode ??
+    "OFF";
+
+  const stage =
+    sensors?.stage ??
+    "OFF";
 
   const stageRemaining =
     sensors?.stageRemainingSeconds ??
@@ -146,159 +175,572 @@ function App() {
     sensors?.coolFan === true ||
     control?.coolFan === true;
 
+
   // ===================================================
-  // TIME FORMAT
+  // FORMAT TIME
   // ===================================================
 
   const formatTime = (seconds) => {
-    const total = Math.max(0, Number(seconds) || 0);
+    const value = Math.max(
+      0,
+      Number(seconds) || 0
+    );
 
-    const hours = Math.floor(total / 3600);
-    const minutes = Math.floor((total % 3600) / 60);
-    const secs = total % 60;
+    const hours = Math.floor(
+      value / 3600
+    );
 
-    return [
-      String(hours).padStart(2, "0"),
-      String(minutes).padStart(2, "0"),
+    const minutes = Math.floor(
+      (value % 3600) / 60
+    );
+
+    const secs = value % 60;
+
+    return (
+      String(hours).padStart(2, "0") +
+      ":" +
+      String(minutes).padStart(2, "0") +
+      ":" +
       String(secs).padStart(2, "0")
-    ].join(":");
+    );
   };
 
+
   // ===================================================
-  // SEND COMMAND
+  // FIREBASE COMMAND
   // ===================================================
 
   const sendCommand = async (command) => {
     try {
-      setSending(true);
-      setCommandMessage(`Sending ${command}...`);
+      setSendingCommand(true);
+
+      setCommandMessage(
+        `Sending ${command}...`
+      );
 
       const commandRef = ref(
         database,
         `${DEVICE_PATH}/control/mode`
       );
 
-      await set(commandRef, command);
+      await set(
+        commandRef,
+        command
+      );
 
-      setCommandMessage(`Command ${command} sent.`);
+      setCommandMessage(
+        `Command "${command}" sent successfully.`
+      );
 
       setTimeout(() => {
         setCommandMessage("");
       }, 3000);
+
     } catch (error) {
-      console.error("Command error:", error);
-      setCommandMessage("Command failed.");
+      console.error(
+        "Command error:",
+        error
+      );
+
+      setCommandMessage(
+        "Failed to send command."
+      );
+
     } finally {
-      setSending(false);
+      setSendingCommand(false);
     }
   };
 
-  // ===================================================
-  // NAVIGATION
-  // ===================================================
-
-  const navigation = [
-    "Dashboard",
-    "Control",
-    "Monitoring",
-    "Settings"
-  ];
 
   // ===================================================
-  // STATUS CARD
+  // PAGE HEADER
   // ===================================================
 
-  const DryingStatus = () => (
-    <section className="drying-status-card">
-
-      <div className="card-heading">
-        <div>
-          <span className="eyebrow">CURRENT SINAG-ANI OPERATION</span>
-          <h2>Drying Status</h2>
-        </div>
-
-        <span
-          className={
-            deviceOnline
-              ? "status-pill online"
-              : "status-pill offline"
-          }
+  const PageHeader = ({
+    title,
+    subtitle,
+  }) => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "25px",
+      }}
+    >
+      <div>
+        <div
+          style={{
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "1px",
+            color: "#6b7280",
+          }}
         >
-          <span className="status-dot"></span>
-          {deviceOnline ? "ONLINE" : "OFFLINE"}
-        </span>
+          SINAG-ANI
+        </div>
+
+        <h1
+          style={{
+            margin: "5px 0",
+            fontSize: "30px",
+          }}
+        >
+          {title}
+        </h1>
+
+        <p
+          style={{
+            margin: 0,
+            color: "#6b7280",
+          }}
+        >
+          {subtitle}
+        </p>
       </div>
 
-      <div className="status-grid">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "13px",
+          color: "#6b7280",
+        }}
+      >
+        <span
+          style={{
+            width: "9px",
+            height: "9px",
+            borderRadius: "50%",
+            background: firebaseConnected
+              ? "#22c55e"
+              : "#9ca3af",
+          }}
+        />
 
-        <div className="status-item">
-          <span>Mode</span>
-          <strong>{mode}</strong>
-        </div>
-
-        <div className="status-item">
-          <span>Stage</span>
-          <strong>{stage}</strong>
-        </div>
-
-        <div className="status-item">
-          <span>Stage Time Remaining</span>
-          <strong>{formatTime(stageRemaining)}</strong>
-        </div>
-
-        <div className="status-item">
-          <span>Total Time Remaining</span>
-          <strong>{formatTime(totalRemaining)}</strong>
-        </div>
-
-        <div className="status-item">
-          <span>Total Elapsed</span>
-          <strong>{formatTime(totalElapsed)}</strong>
-        </div>
-
-        <div className="status-item">
-          <span>Main Fan</span>
-          <strong>{Number(mainFan) || 0}%</strong>
-        </div>
-
-        <div className="status-item">
-          <span>Cool-Air Fan</span>
-          <strong>{coolFan ? "ON" : "OFF"}</strong>
-        </div>
-
-        <div className="status-item">
-          <span>Firebase</span>
-          <strong>
-            {firebaseOnline ? "CONNECTED" : "DISCONNECTED"}
-          </strong>
-        </div>
-
+        {firebaseConnected
+          ? "Firebase Connected"
+          : "Firebase Connecting..."}
       </div>
-    </section>
+    </div>
   );
+
 
   // ===================================================
   // SENSOR CARD
   // ===================================================
 
-  const SensorCard = ({ title, value, unit, icon }) => (
-    <div className="sensor-card">
-
-      <div className="sensor-icon">
-        {icon}
+  const SensorCard = ({
+    title,
+    value,
+    unit,
+  }) => (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          color: "#6b7280",
+          fontSize: "13px",
+          marginBottom: "10px",
+        }}
+      >
+        {title}
       </div>
 
-      <div className="sensor-info">
-        <span>{title}</span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: "5px",
+        }}
+      >
+        <strong
+          style={{
+            fontSize: "28px",
+          }}
+        >
+          {value}
+        </strong>
 
-        <div className="sensor-value">
-          <strong>{value}</strong>
-          <small>{unit}</small>
+        <span
+          style={{
+            color: "#6b7280",
+          }}
+        >
+          {unit}
+        </span>
+      </div>
+    </div>
+  );
+
+
+  // ===================================================
+  // STATUS ITEM
+  // ===================================================
+
+  const StatusItem = ({
+    title,
+    value,
+  }) => (
+    <div
+      style={{
+        background: "#f8fafc",
+        borderRadius: "10px",
+        padding: "14px",
+      }}
+    >
+      <div
+        style={{
+          color: "#6b7280",
+          fontSize: "11px",
+          marginBottom: "6px",
+        }}
+      >
+        {title}
+      </div>
+
+      <strong>{value}</strong>
+    </div>
+  );
+
+
+  // ===================================================
+  // DRYING STATUS
+  // ===================================================
+
+  const DryingStatus = () => (
+    <section
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "24px",
+        marginBottom: "24px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color: "#6b7280",
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "1px",
+            }}
+          >
+            CURRENT SINAG-ANI OPERATION
+          </div>
+
+          <h2
+            style={{
+              margin: "5px 0 0",
+            }}
+          >
+            Drying Status
+          </h2>
+        </div>
+
+        <div
+          style={{
+            padding: "7px 12px",
+            borderRadius: "20px",
+            background: deviceOnline
+              ? "#dcfce7"
+              : "#f3f4f6",
+            color: deviceOnline
+              ? "#166534"
+              : "#6b7280",
+            fontSize: "11px",
+            fontWeight: "800",
+          }}
+        >
+          {deviceOnline
+            ? "● ONLINE"
+            : "● OFFLINE"}
         </div>
       </div>
 
-    </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(4, minmax(0, 1fr))",
+          gap: "12px",
+        }}
+      >
+        <StatusItem
+          title="Mode"
+          value={mode}
+        />
+
+        <StatusItem
+          title="Stage"
+          value={stage}
+        />
+
+        <StatusItem
+          title="Stage Time Remaining"
+          value={formatTime(stageRemaining)}
+        />
+
+        <StatusItem
+          title="Total Time Remaining"
+          value={formatTime(totalRemaining)}
+        />
+
+        <StatusItem
+          title="Total Elapsed"
+          value={formatTime(totalElapsed)}
+        />
+
+        <StatusItem
+          title="Main Fan"
+          value={`${Number(mainFan) || 0}%`}
+        />
+
+        <StatusItem
+          title="Cool-Air Fan"
+          value={coolFan ? "ON" : "OFF"}
+        />
+
+        <StatusItem
+          title="Firebase"
+          value={
+            firebaseConnected
+              ? "CONNECTED"
+              : "DISCONNECTED"
+          }
+        />
+      </div>
+    </section>
   );
+
+
+  // ===================================================
+  // CONTROL BUTTON
+  // ===================================================
+
+  const ControlButton = ({
+    children,
+    background,
+    command,
+  }) => (
+    <button
+      disabled={sendingCommand}
+      onClick={() =>
+        sendCommand(command)
+      }
+      style={{
+        border: "0",
+        borderRadius: "10px",
+        padding: "15px",
+        minHeight: "55px",
+        background,
+        color: "#ffffff",
+        fontWeight: "700",
+        cursor: sendingCommand
+          ? "not-allowed"
+          : "pointer",
+        opacity: sendingCommand
+          ? 0.6
+          : 1,
+      }}
+    >
+      {children}
+    </button>
+  );
+
+
+  // ===================================================
+  // CONTROL PANEL
+  // ===================================================
+
+  const ControlPanel = () => (
+    <section
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "24px",
+        marginBottom: "24px",
+      }}
+    >
+      <div
+        style={{
+          marginBottom: "22px",
+        }}
+      >
+        <div
+          style={{
+            color: "#6b7280",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "1px",
+          }}
+        >
+          SYSTEM CONTROL
+        </div>
+
+        <h2
+          style={{
+            margin: "5px 0 0",
+          }}
+        >
+          Drying Controls
+        </h2>
+      </div>
+
+
+      {/* =============================================
+          AUTOMATIC MODE
+      ============================================= */}
+
+      <div
+        style={{
+          marginBottom: "28px",
+        }}
+      >
+        <h3
+          style={{
+            fontSize: "15px",
+            marginBottom: "12px",
+          }}
+        >
+          Automatic Mode
+        </h3>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(4, minmax(0, 1fr))",
+            gap: "10px",
+          }}
+        >
+
+          <ControlButton
+            command="AUTO"
+            background="#16a34a"
+          >
+            ▶ AUTOMATIC
+          </ControlButton>
+
+          <ControlButton
+            command="PAUSE"
+            background="#f59e0b"
+          >
+            ⏸ PAUSE
+          </ControlButton>
+
+          <ControlButton
+            command="RESUME"
+            background="#2563eb"
+          >
+            ▶ RESUME
+          </ControlButton>
+
+          <ControlButton
+            command="OFF"
+            background="#dc2626"
+          >
+            ■ STOP
+          </ControlButton>
+
+        </div>
+      </div>
+
+
+      {/* =============================================
+          MANUAL MODE
+      ============================================= */}
+
+      <div>
+        <h3
+          style={{
+            fontSize: "15px",
+            marginBottom: "12px",
+          }}
+        >
+          Manual Mode
+        </h3>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(4, minmax(0, 1fr))",
+            gap: "10px",
+          }}
+        >
+
+          <ControlButton
+            command="HIGH"
+            background="#f59e0b"
+          >
+            HIGH
+          </ControlButton>
+
+          <ControlButton
+            command="MODERATE-HIGH"
+            background="#eab308"
+          >
+            MODERATE-HIGH
+          </ControlButton>
+
+          <ControlButton
+            command="MODERATE"
+            background="#84cc16"
+          >
+            MODERATE
+          </ControlButton>
+
+          <ControlButton
+            command="OFF"
+            background="#dc2626"
+          >
+            ■ STOP
+          </ControlButton>
+
+        </div>
+      </div>
+
+
+      {/* =============================================
+          COMMAND MESSAGE
+      ============================================= */}
+
+      {commandMessage && (
+        <div
+          style={{
+            marginTop: "18px",
+            padding: "11px",
+            borderRadius: "8px",
+            background: "#f1f5f9",
+            color: "#475569",
+            fontSize: "13px",
+          }}
+        >
+          {commandMessage}
+        </div>
+      )}
+
+    </section>
+  );
+
 
   // ===================================================
   // DASHBOARD
@@ -313,157 +755,118 @@ function App() {
 
       <DryingStatus />
 
-      <div className="sensor-grid">
-
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(4, minmax(0, 1fr))",
+          gap: "15px",
+          marginBottom: "24px",
+        }}
+      >
         <SensorCard
           title="Temperature Sensor 1"
-          value={temp1}
+          value={temperature1}
           unit="°C"
-          icon="T1"
         />
 
         <SensorCard
           title="Temperature Sensor 2"
-          value={temp2}
+          value={temperature2}
           unit="°C"
-          icon="T2"
         />
 
         <SensorCard
           title="Humidity"
           value={humidity}
           unit="%"
-          icon="H"
         />
 
         <SensorCard
           title="Device Status"
-          value={deviceOnline ? "ONLINE" : "OFFLINE"}
+          value={
+            deviceOnline
+              ? "ONLINE"
+              : "OFFLINE"
+          }
           unit=""
-          icon="●"
         />
-
       </div>
 
       <ControlPanel />
-
     </>
   );
 
+
   // ===================================================
-  // CONTROL PANEL
+  // CONTROL PAGE
   // ===================================================
 
-  const ControlPanel = () => (
-    <section className="control-card">
+  const ControlPage = () => (
+    <>
+      <PageHeader
+        title="Control"
+        subtitle="Control the SINAG-ANI drying operation"
+      />
 
-      <div className="card-heading">
-        <div>
-          <span className="eyebrow">SYSTEM CONTROL</span>
-          <h2>Drying Controls</h2>
-        </div>
-      </div>
-
-      <div className="control-grid">
-
-        <button
-          className="control-btn start"
-          disabled={sending}
-          onClick={() => sendCommand("START")}
-        >
-          <span>▶</span>
-          START DRYING
-        </button>
-
-        <button
-          className="control-btn high"
-          disabled={sending}
-          onClick={() => sendCommand("HIGH")}
-        >
-          HIGH
-        </button>
-
-        <button
-          className="control-btn moderate-high"
-          disabled={sending}
-          onClick={() => sendCommand("MODERATE-HIGH")}
-        >
-          MODERATE-HIGH
-        </button>
-
-        <button
-          className="control-btn moderate"
-          disabled={sending}
-          onClick={() => sendCommand("MODERATE")}
-        >
-          MODERATE
-        </button>
-
-        <button
-          className="control-btn stop"
-          disabled={sending}
-          onClick={() => sendCommand("OFF")}
-        >
-          ■ STOP / OFF
-        </button>
-
-      </div>
-
-      {commandMessage && (
-        <div className="command-message">
-          {commandMessage}
-        </div>
-      )}
-
-    </section>
+      <ControlPanel />
+    </>
   );
 
+
   // ===================================================
-  // MONITORING
+  // MONITORING PAGE
   // ===================================================
 
   const Monitoring = () => (
     <>
       <PageHeader
         title="Monitoring"
-        subtitle="Real-time sensor information"
+        subtitle="Real-time sensor monitoring"
       />
 
-      <div className="sensor-grid">
-
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(4, minmax(0, 1fr))",
+          gap: "15px",
+          marginBottom: "24px",
+        }}
+      >
         <SensorCard
           title="Temperature Sensor 1"
-          value={temp1}
+          value={temperature1}
           unit="°C"
-          icon="T1"
         />
 
         <SensorCard
           title="Temperature Sensor 2"
-          value={temp2}
+          value={temperature2}
           unit="°C"
-          icon="T2"
         />
 
         <SensorCard
           title="Humidity"
           value={humidity}
           unit="%"
-          icon="H"
         />
 
         <SensorCard
           title="Device Status"
-          value={deviceOnline ? "ONLINE" : "OFFLINE"}
+          value={
+            deviceOnline
+              ? "ONLINE"
+              : "OFFLINE"
+          }
           unit=""
-          icon="●"
         />
-
       </div>
 
       <DryingStatus />
     </>
   );
+
 
   // ===================================================
   // SETTINGS
@@ -476,67 +879,78 @@ function App() {
         subtitle="SINAG-ANI device information"
       />
 
-      <section className="settings-card">
+      <section
+        style={{
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "14px",
+          padding: "24px",
+          maxWidth: "700px",
+        }}
+      >
 
-        <div className="settings-row">
-          <span>Device ID</span>
-          <strong>device001</strong>
-        </div>
+        <Setting
+          title="Device ID"
+          value="device001"
+        />
 
-        <div className="settings-row">
-          <span>Firebase Connection</span>
-          <strong>
-            {firebaseOnline ? "Connected" : "Disconnected"}
-          </strong>
-        </div>
+        <Setting
+          title="Firebase"
+          value={
+            firebaseConnected
+              ? "Connected"
+              : "Disconnected"
+          }
+        />
 
-        <div className="settings-row">
-          <span>Device Status</span>
-          <strong>
-            {deviceOnline ? "Online" : "Offline"}
-          </strong>
-        </div>
+        <Setting
+          title="Device"
+          value={
+            deviceOnline
+              ? "Online"
+              : "Offline"
+          }
+        />
 
-        <div className="settings-row">
-          <span>Database</span>
-          <strong>Realtime Database</strong>
-        </div>
+        <Setting
+          title="Database"
+          value="Realtime Database"
+        />
 
       </section>
     </>
   );
 
+
   // ===================================================
-  // PAGE HEADER
+  // SETTING
   // ===================================================
 
-  const PageHeader = ({ title, subtitle }) => (
-    <div className="page-header">
+  const Setting = ({
+    title,
+    value,
+  }) => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        padding: "16px 0",
+        borderBottom:
+          "1px solid #e5e7eb",
+      }}
+    >
+      <span
+        style={{
+          color: "#6b7280",
+        }}
+      >
+        {title}
+      </span>
 
-      <div>
-        <span className="eyebrow">SINAG-ANI</span>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </div>
-
-      <div className="connection-status">
-
-        <span
-          className={
-            firebaseOnline
-              ? "connection-dot connected"
-              : "connection-dot"
-          }
-        ></span>
-
-        {firebaseOnline
-          ? "Firebase Connected"
-          : "Firebase Connecting..."}
-
-      </div>
-
+      <strong>{value}</strong>
     </div>
   );
+
 
   // ===================================================
   // PAGE ROUTER
@@ -547,16 +961,7 @@ function App() {
     switch (activePage) {
 
       case "Control":
-        return (
-          <>
-            <PageHeader
-              title="Control"
-              subtitle="Control the drying operation"
-            />
-
-            <ControlPanel />
-          </>
-        );
+        return <ControlPage />;
 
       case "Monitoring":
         return <Monitoring />;
@@ -567,67 +972,113 @@ function App() {
       case "Dashboard":
       default:
         return <Dashboard />;
+
     }
   };
 
+
   // ===================================================
-  // MAIN UI
+  // WEBSITE
   // ===================================================
 
   return (
-    <div className="app">
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f4f6f8",
+        color: "#17202a",
+        fontFamily:
+          "Arial, Helvetica, sans-serif",
+      }}
+    >
 
-      {/* SIDEBAR */}
+      {/* =============================================
+          SIDEBAR
+      ============================================= */}
 
       <aside
-        className={
-          sidebarOpen
-            ? "sidebar open"
-            : "sidebar closed"
-        }
+        style={{
+          width: "240px",
+          minHeight: "100vh",
+          background: "#111827",
+          color: "#ffffff",
+          padding: "20px",
+          position: "fixed",
+          left: 0,
+          top: 0,
+          bottom: 0,
+        }}
       >
 
-        <div className="brand">
+        <div
+          style={{
+            marginBottom: "35px",
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              fontSize: "20px",
+            }}
+          >
+            SINAG-ANI
+          </h2>
 
-          <div className="brand-logo">
-            SA
-          </div>
-
-          {sidebarOpen && (
-            <div>
-              <h2>SINAG-ANI</h2>
-              <span>IoT Dryer</span>
-            </div>
-          )}
-
+          <span
+            style={{
+              color: "#9ca3af",
+              fontSize: "12px",
+            }}
+          >
+            IoT Solar Dryer
+          </span>
         </div>
 
 
-        <nav className="nav">
+        <nav
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
 
-          {navigation.map((item) => (
+          {[
+            "Dashboard",
+            "Control",
+            "Monitoring",
+            "Settings",
+          ].map((page) => (
 
             <button
-              key={item}
-              className={
-                activePage === item
-                  ? "nav-item active"
-                  : "nav-item"
+              key={page}
+              onClick={() =>
+                setActivePage(page)
               }
-              onClick={() => setActivePage(item)}
+              style={{
+                border: "0",
+                borderRadius: "9px",
+                padding: "13px",
+                textAlign: "left",
+                cursor: "pointer",
+
+                background:
+                  activePage === page
+                    ? "#ffffff"
+                    : "transparent",
+
+                color:
+                  activePage === page
+                    ? "#111827"
+                    : "#9ca3af",
+
+                fontWeight:
+                  activePage === page
+                    ? "700"
+                    : "500",
+              }}
             >
-
-              <span className="nav-icon">
-                {item === "Dashboard" && "⌂"}
-                {item === "Control" && "⚙"}
-                {item === "Monitoring" && "◉"}
-                {item === "Settings" && "☷"}
-              </span>
-
-              {sidebarOpen && (
-                <span>{item}</span>
-              )}
-
+              {page}
             </button>
 
           ))}
@@ -635,76 +1086,88 @@ function App() {
         </nav>
 
 
-        <div className="sidebar-bottom">
+        <div
+          style={{
+            position: "absolute",
+            bottom: "25px",
+            left: "20px",
+            color: "#9ca3af",
+            fontSize: "12px",
+          }}
+        >
 
-          <div className="mini-status">
-
-            <span
-              className={
+          <span
+            style={{
+              display: "inline-block",
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              marginRight: "7px",
+              background:
                 deviceOnline
-                  ? "connection-dot connected"
-                  : "connection-dot"
-              }
-            ></span>
+                  ? "#22c55e"
+                  : "#9ca3af",
+            }}
+          />
 
-            {sidebarOpen && (
-              <span>
-                {deviceOnline
-                  ? "Device Online"
-                  : "Device Offline"}
-              </span>
-            )}
-
-          </div>
+          {deviceOnline
+            ? "Device Online"
+            : "Device Offline"}
 
         </div>
 
       </aside>
 
 
-      {/* MAIN */}
+      {/* =============================================
+          MAIN CONTENT
+      ============================================= */}
 
       <main
-        className={
-          sidebarOpen
-            ? "main open"
-            : "main closed"
-        }
+        style={{
+          marginLeft: "240px",
+          minHeight: "100vh",
+        }}
       >
 
-        <header className="topbar">
+        <header
+          style={{
+            height: "65px",
+            background: "#ffffff",
+            borderBottom:
+              "1px solid #e5e7eb",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 25px",
+          }}
+        >
 
-          <button
-            className="menu-button"
-            onClick={() =>
-              setSidebarOpen(!sidebarOpen)
-            }
-          >
-            ☰
-          </button>
-
-          <div className="topbar-title">
+          <strong>
             {activePage}
-          </div>
+          </strong>
 
-          <div className="topbar-device">
-            <span
-              className={
-                deviceOnline
-                  ? "connection-dot connected"
-                  : "connection-dot"
-              }
-            ></span>
-
+          <div
+            style={{
+              marginLeft: "auto",
+              fontSize: "13px",
+              color: "#6b7280",
+            }}
+          >
             device001
           </div>
 
         </header>
 
 
-        <div className="content">
+        <main
+          style={{
+            padding: "30px",
+            maxWidth: "1500px",
+            margin: "0 auto",
+          }}
+        >
           {renderPage()}
-        </div>
+        </main>
 
       </main>
 
