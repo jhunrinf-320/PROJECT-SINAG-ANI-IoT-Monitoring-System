@@ -1,10 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
-import {
-  getDatabase,
-} from "firebase/database";
-import {
-  getAuth,
-} from "firebase/auth";
+import { getDatabase } from "firebase/database";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
@@ -18,30 +14,15 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL",
 };
 
-// ==========================================
-// INITIALIZE FIREBASE
-// ==========================================
-
+// Prevent Firebase from being initialized twice
 const firebaseApp =
   getApps().length > 0
     ? getApps()[0]
     : initializeApp(firebaseConfig);
 
-// ==========================================
-// FIREBASE SERVICES
-// ==========================================
-
 const database = getDatabase(firebaseApp);
 const auth = getAuth(firebaseApp);
 
-// ==========================================
-// EXPORT
-// ==========================================
-
-export {
-  firebaseApp,
-  database,
-  auth,
-};
+export { firebaseApp, database, auth };
 
 export default firebaseApp;
