@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
 
-import {
-  database,
-  auth,
-  ref,
-  onValue,
-  signInAnonymously,
-  onAuthStateChanged,
-} from "./firebase/firebaseConfig";
+import firebaseTest from "./firebase/firebaseConfig";
+
+console.log("FIREBASE CONFIG LOADED:", firebaseTest);
 
 import Sidebar from "./components/Sidebar";
 import SensorCard from "./components/SensorCard";
