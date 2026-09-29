@@ -1,260 +1,804 @@
-import { useState } from "react";
+/* =========================================
+   SINAG-ANI IoT DASHBOARD
+   ========================================= */
 
-import {
-  initializeApp,
-  getApps,
-} from "firebase/app";
-
-import {
-  getDatabase,
-  ref,
-  set,
-} from "firebase/database";
-
-import {
-  getAuth,
-  signInAnonymously,
-} from "firebase/auth";
-
-// ==========================================
-// FIREBASE CONFIG
-// ==========================================
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
-  authDomain: "sinag-ani-iot.firebaseapp.com",
-  databaseURL:
-    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "sinag-ani-iot",
-  storageBucket:
-    "sinag-ani-iot.firebasestorage.app",
-  messagingSenderId: "505006165687",
-  appId: "1:505006165687:web:8d930c2a846a978a41c732",
-  measurementId: "G-F1YD6L3XNL",
-};
-
-// ==========================================
-// FIREBASE
-// ==========================================
-
-const app = getApps().length
-  ? getApps()[0]
-  : initializeApp(firebaseConfig);
-
-const database = getDatabase(app);
-const auth = getAuth(app);
-
-// ==========================================
-// CONTROL PANEL
-// ==========================================
-
-function ControlPanel() {
-
-  const [currentMode, setCurrentMode] =
-    useState("OFF");
-
-  const [message, setMessage] =
-    useState("Ready");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  // ========================================
-  // SEND COMMAND
-  // ========================================
-
-  const command = async (mode) => {
-
-    console.log(
-      "================================"
-    );
-
-    console.log(
-      "BUTTON PRESSED:",
-      mode
-    );
-
-    setLoading(true);
-
-    setMessage(
-      `Sending ${mode}...`
-    );
-
-    try {
-
-      // ------------------------------------
-      // AUTHENTICATE
-      // ------------------------------------
-
-      console.log(
-        "Authenticating Firebase..."
-      );
-
-      const userCredential =
-        await signInAnonymously(auth);
-
-      console.log(
-        "Authenticated:",
-        userCredential.user.uid
-      );
-
-      // ------------------------------------
-      // FIREBASE PATH
-      // ------------------------------------
-
-      const commandPath =
-        "devices/device001/control/mode";
-
-      console.log(
-        "Firebase path:",
-        commandPath
-      );
-
-      console.log(
-        "Command:",
-        mode
-      );
-
-      // ------------------------------------
-      // WRITE COMMAND
-      // ------------------------------------
-
-      await set(
-        ref(
-          database,
-          commandPath
-        ),
-        mode
-      );
-
-      // ------------------------------------
-      // SUCCESS
-      // ------------------------------------
-
-      console.log(
-        "SUCCESS: Firebase command written!"
-      );
-
-      setCurrentMode(mode);
-
-      setMessage(
-        `Command sent: ${mode}`
-      );
-
-    } catch (error) {
-
-      console.error(
-        "================================"
-      );
-
-      console.error(
-        "FIREBASE COMMAND ERROR"
-      );
-
-      console.error(
-        error
-      );
-
-      console.error(
-        "================================"
-      );
-
-      setMessage(
-        `ERROR: ${error.message}`
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  };
-
-  return (
-
-    <section className="control-panel">
-
-      <h2>
-        Drying Control
-      </h2>
-
-      <p>
-        Select the drying mode for the
-        SINAG-ANI system.
-      </p>
-
-      <div className="control-buttons">
-
-        <button
-          type="button"
-          onClick={() =>
-            command("HIGH")
-          }
-          disabled={loading}
-        >
-          HIGH
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            command("MODERATE-HIGH")
-          }
-          disabled={loading}
-        >
-          MODERATE-HIGH
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            command("MODERATE")
-          }
-          disabled={loading}
-        >
-          MODERATE
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            command("OFF")
-          }
-          disabled={loading}
-        >
-          OFF
-        </button>
-
-      </div>
-
-      <div
-        style={{
-          marginTop: "15px",
-          padding: "10px",
-          borderRadius: "8px",
-          background: "#f1f5f9",
-          fontSize: "13px",
-        }}
-      >
-
-        <strong>
-          Current Mode:
-        </strong>{" "}
-
-        {currentMode}
-
-        <br />
-
-        <strong>
-          Status:
-        </strong>{" "}
-
-        {message}
-
-      </div>
-
-    </section>
-  );
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-export default ControlPanel;
+:root {
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #172033;
+  background: #f5f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+/* =========================================
+   MAIN APP
+   ========================================= */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  background: #f5f7fb;
+}
+
+/* =========================================
+   SIDEBAR
+   ========================================= */
+
+.sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 24px 16px;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  z-index: 100;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 24px;
+}
+
+.sidebar-logo h1 {
+  font-size: 21px;
+  font-weight: 800;
+  color: #166534;
+}
+
+.sidebar-logo p {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Navigation */
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 15px;
+}
+
+.sidebar-nav button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #64748b;
+
+  padding: 12px 14px;
+  border-radius: 10px;
+
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.sidebar-nav button:hover {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.sidebar-nav button.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sidebar-nav button:active {
+  transform: scale(0.98);
+}
+
+/* =========================================
+   MAIN CONTENT
+   ========================================= */
+
+.main-content {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  min-height: 100vh;
+  padding: 28px;
+}
+
+/* =========================================
+   TOP HEADER
+   ========================================= */
+
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 26px;
+}
+
+.page-title h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.page-title p {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Online status */
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 13px;
+  border-radius: 999px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connection-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.connection-dot.online {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px #dcfce7;
+}
+
+.connection-dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px #fee2e2;
+}
+
+/* =========================================
+   DASHBOARD GRID
+   ========================================= */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* =========================================
+   SENSOR CARDS
+   ========================================= */
+
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.sensor-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 20px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.04);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sensor-card:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 7px 20px rgba(15, 23, 42, 0.08);
+}
+
+.sensor-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  margin-bottom: 14px;
+}
+
+.sensor-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.sensor-card-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.sensor-card-unit {
+  font-size: 14px;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.sensor-card-footer {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* =========================================
+   STATUS CARD
+   ========================================= */
+
+.status-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 22px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 20px;
+}
+
+.status-card h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.status-operation {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  background: #f0fdf4;
+  color: #166534;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Status rows */
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.status-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.status-label {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.status-value {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* =========================================
+   PROGRESS BAR
+   ========================================= */
+
+.progress-container {
+  margin-top: 20px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+
+  margin-bottom: 8px;
+
+  font-size: 12px;
+  color: #64748b;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 9px;
+
+  background: #e5e7eb;
+  border-radius: 999px;
+
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #22c55e;
+  border-radius: inherit;
+
+  transition: width 0.5s ease;
+}
+
+/* =========================================
+   CONTROL PANEL
+   ========================================= */
+
+.control-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 22px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.control-panel h2 {
+  font-size: 19px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.control-panel > p {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Button grid */
+
+.control-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.control-buttons button {
+  min-height: 46px;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+
+  background: #f0fdf4;
+  color: #166534;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.control-buttons button:hover {
+  background: #dcfce7;
+
+  box-shadow:
+    0 3px 10px rgba(22, 101, 52, 0.1);
+}
+
+.control-buttons button:active {
+  transform: scale(0.97);
+}
+
+.control-buttons button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.control-buttons .stop-button {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.control-buttons .stop-button:hover {
+  background: #fee2e2;
+}
+
+/* =========================================
+   TEMPERATURE CHART
+   ========================================= */
+
+.chart-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 22px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.04);
+
+  min-height: 350px;
+}
+
+.chart-card h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+
+  margin-bottom: 18px;
+}
+
+.chart-container {
+  width: 100%;
+  height: 280px;
+}
+
+/* =========================================
+   GENERAL CARDS
+   ========================================= */
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 22px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+/* =========================================
+   PAGE SECTIONS
+   ========================================= */
+
+.section {
+  margin-bottom: 22px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+
+  margin-bottom: 14px;
+}
+
+/* =========================================
+   BADGES
+   ========================================= */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-online {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-offline {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-idle {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* =========================================
+   LOADING / ERROR
+   ========================================= */
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  min-height: 200px;
+
+  color: #64748b;
+  font-size: 14px;
+}
+
+.error-message {
+  padding: 14px 16px;
+
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+
+  border-radius: 10px;
+
+  color: #991b1b;
+  font-size: 13px;
+}
+
+/* =========================================
+   TABLES
+   ========================================= */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 14px;
+
+  border-bottom: 1px solid #f1f5f9;
+
+  text-align: left;
+  font-size: 13px;
+}
+
+.data-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.data-table td {
+  color: #334155;
+}
+
+/* =========================================
+   SETTINGS
+   ========================================= */
+
+.settings-card {
+  max-width: 800px;
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 24px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 15px 0;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-label {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.settings-value {
+  color: #111827;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* =========================================
+   SCROLLBAR
+   ========================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* =========================================
+   RESPONSIVE — TABLET
+   ========================================= */
+
+@media (max-width: 1100px) {
+  .sensor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================
+   RESPONSIVE — MOBILE
+   ========================================= */
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+
+    position: relative;
+
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+
+    padding: 12px;
+  }
+
+  .sidebar-logo {
+    padding: 8px 10px 12px;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+
+    margin-top: 5px;
+    padding-bottom: 3px;
+  }
+
+  .sidebar-nav button {
+    width: auto;
+    min-width: max-content;
+
+    text-align: center;
+  }
+
+  .app {
+    display: block;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+
+    padding: 18px;
+  }
+
+  .top-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .page-title h1 {
+    font-size: 24px;
+  }
+
+  .sensor-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .sensor-card {
+    padding: 16px;
+  }
+
+  .sensor-card-value {
+    font-size: 23px;
+  }
+}
+
+/* =========================================
+   RESPONSIVE — SMALL PHONE
+   ========================================= */
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 14px;
+  }
+
+  .sensor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .control-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .status-card,
+  .control-panel,
+  .chart-card,
+  .card {
+    padding: 17px;
+  }
+
+  .page-title h1 {
+    font-size: 22px;
+  }
+
+  .connection-status {
+    font-size: 12px;
+  }
+}
