@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 
 import {
   database,
+  auth,
   ref,
   onValue,
+  signInAnonymously,
+  onAuthStateChanged,
 } from "./firebase/firebaseConfig";
 
 import Sidebar from "./components/Sidebar";
@@ -16,65 +19,148 @@ function App() {
   const [device, setDevice] = useState({});
   const [history, setHistory] = useState([]);
   const [activePage, setActivePage] = useState("Dashboard");
+  const [firebaseOnline, setFirebaseOnline] =
+    useState(false);
 
   // ==========================================
-  // FIREBASE DEVICE LISTENER
+  // FIREBASE CONNECTION
   // ==========================================
 
   useEffect(() => {
-    const deviceRef = ref(
-      database,
-      "devices/device001"
-    );
+    let unsubscribeDevice = null;
 
-    const unsubscribe = onValue(
-      deviceRef,
-      (snapshot) => {
-        const data = snapshot.val();
+    const unsubscribeAuth =
+      onAuthStateChanged(auth, (user) => {
 
-        console.log("Firebase device data:", data);
+        // --------------------------------------
+        // NOT AUTHENTICATED
+        // --------------------------------------
 
-        if (data) {
-          setDevice(data);
+        if (!user) {
+          setFirebaseOnline(false);
 
-          const temp1 = data?.sensors?.temp1;
+          signInAnonymously(auth)
+            .then(() => {
+              console.log(
+                "Firebase anonymous authentication successful"
+              );
+            })
+            .catch((error) => {
+              console.error(
+                "Firebase authentication failed:",
+                error
+              );
+            });
 
-          if (
-            temp1 !== undefined &&
-            temp1 !== null &&
-            !isNaN(Number(temp1))
-          ) {
-            setHistory((previous) => [
-              ...previous.slice(-19),
-              {
-                time: new Date().toLocaleTimeString(),
-                temp: Number(temp1),
-              },
-            ]);
-          }
+          return;
         }
-      },
-      (error) => {
-        console.error(
-          "Firebase listener error:",
-          error
-        );
-      }
-    );
 
-    return () => unsubscribe();
+        // --------------------------------------
+        // AUTHENTICATED
+        // --------------------------------------
+
+        console.log(
+          "Firebase authenticated:",
+          user.uid
+        );
+
+        setFirebaseOnline(true);
+
+        // --------------------------------------
+        // DEVICE PATH
+        // --------------------------------------
+
+        const deviceRef = ref(
+          database,
+          "devices/device001"
+        );
+
+        // --------------------------------------
+        // LISTEN FOR DEVICE DATA
+        // --------------------------------------
+
+        unsubscribeDevice = onValue(
+          deviceRef,
+
+          (snapshot) => {
+            const data = snapshot.val();
+
+            console.log(
+              "Firebase device data:",
+              data
+            );
+
+            if (!data) {
+              return;
+            }
+
+            setDevice(data);
+
+            // ----------------------------------
+            // TEMPERATURE HISTORY
+            // ----------------------------------
+
+            const temp1 =
+              data?.sensors?.temp1;
+
+            if (
+              temp1 !== undefined &&
+              temp1 !== null &&
+              Number.isFinite(Number(temp1))
+            ) {
+              setHistory((previous) => [
+                ...previous.slice(-19),
+                {
+                  time:
+                    new Date().toLocaleTimeString(),
+                  temp: Number(temp1),
+                },
+              ]);
+            }
+          },
+
+          (error) => {
+            console.error(
+              "Firebase device listener error:",
+              error
+            );
+
+            setFirebaseOnline(false);
+          }
+        );
+      });
+
+    // ========================================
+    // CLEANUP
+    // ========================================
+
+    return () => {
+      unsubscribeAuth();
+
+      if (unsubscribeDevice) {
+        unsubscribeDevice();
+      }
+    };
   }, []);
 
   // ==========================================
   // SENSOR VALUES
   // ==========================================
 
-  const temp1 = device?.sensors?.temp1;
-  const temp2 = device?.sensors?.temp2;
-  const humidity = device?.sensors?.humidity;
+  const temp1 =
+    device?.sensors?.temp1;
+
+  const temp2 =
+    device?.sensors?.temp2;
+
+  const humidity =
+    device?.sensors?.humidity;
+
+  const dht11Temperature =
+    device?.sensors?.dht11Temperature;
 
   // ==========================================
-  // DEVICE ONLINE STATUS
+  // DEVICE ONLINE
   // ==========================================
 
   const deviceOnline =
@@ -86,7 +172,7 @@ function App() {
     device?.online === "1";
 
   // ==========================================
-  // MAIN APP
+  // APP
   // ==========================================
 
   return (
@@ -102,12 +188,14 @@ function App() {
       />
 
       {/* ======================================
-          MAIN CONTENT
+          MAIN
       ====================================== */}
 
       <main>
 
-        <h1>SINAG-ANI IoT Dashboard</h1>
+        <h1>
+          SINAG-ANI IoT Dashboard
+        </h1>
 
         {/* ====================================
             DASHBOARD
@@ -119,13 +207,15 @@ function App() {
 
             <div
               className={
-                deviceOnline
+                deviceOnline &&
+                firebaseOnline
                   ? "status-online"
                   : "status-offline"
               }
             >
               ●{" "}
-              {deviceOnline
+              {deviceOnline &&
+              firebaseOnline
                 ? "DEVICE ONLINE"
                 : "DEVICE OFFLINE"}
             </div>
@@ -155,30 +245,65 @@ function App() {
                 icon="💧"
               />
 
+              <SensorCard
+                title="DHT11 Temperature"
+                value={dht11Temperature}
+                unit="°C"
+                icon="🌡️"
+              />
+
             </div>
 
             {/* DRYING STATUS */}
 
             <StatusCard
-              mode={device?.status?.mode}
-              pwm={device?.status?.pwm}
-              stage={device?.status?.stage}
-              online={device?.status?.online}
-              automatic={device?.status?.automatic}
-              paused={device?.status?.paused}
+              mode={
+                device?.status?.mode
+              }
+
+              pwm={
+                device?.status?.pwm
+              }
+
+              stage={
+                device?.status?.stage
+              }
+
+              online={
+                device?.status?.online
+              }
+
+              automatic={
+                device?.status?.automatic
+              }
+
+              paused={
+                device?.status?.paused
+              }
+
               stageElapsedSeconds={
-                device?.status?.stageElapsedSeconds
+                device?.status
+                  ?.stageElapsedSeconds
               }
+
               stageRemainingSeconds={
-                device?.status?.stageRemainingSeconds
+                device?.status
+                  ?.stageRemainingSeconds
               }
+
               totalElapsedSeconds={
-                device?.status?.totalElapsedSeconds
+                device?.status
+                  ?.totalElapsedSeconds
               }
+
               totalRemainingSeconds={
-                device?.status?.totalRemainingSeconds
+                device?.status
+                  ?.totalRemainingSeconds
               }
-              coolFan={device?.status?.coolFan}
+
+              coolFan={
+                device?.status?.coolFan
+              }
             />
 
             {/* =================================
@@ -195,7 +320,9 @@ function App() {
 
         {activePage === "Monitoring" && (
           <>
-            <h2>Sensor Monitoring</h2>
+            <h2>
+              Sensor Monitoring
+            </h2>
 
             <div className="cards">
 
@@ -220,6 +347,13 @@ function App() {
                 icon="💧"
               />
 
+              <SensorCard
+                title="DHT11 Temperature"
+                value={dht11Temperature}
+                unit="°C"
+                icon="🌡️"
+              />
+
             </div>
 
             <TemperatureChart
@@ -234,7 +368,9 @@ function App() {
 
         {activePage === "Control" && (
           <>
-            <h2>Drying Control</h2>
+            <h2>
+              Drying Control
+            </h2>
 
             <ControlPanel />
           </>
@@ -247,21 +383,47 @@ function App() {
         {activePage === "Settings" && (
           <div className="settings-box">
 
-            <h2>System Settings</h2>
+            <h2>
+              System Settings
+            </h2>
 
             <p>
-              <strong>Device ID:</strong>{" "}
+              <strong>
+                Device ID:
+              </strong>{" "}
               device001
             </p>
 
             <p>
-              <strong>Firebase:</strong>{" "}
-              Connected
+              <strong>
+                Firebase:
+              </strong>{" "}
+              {firebaseOnline
+                ? "Connected"
+                : "Disconnected"}
             </p>
 
             <p>
-              <strong>Controller:</strong>{" "}
+              <strong>
+                Device:
+              </strong>{" "}
+              {deviceOnline
+                ? "Online"
+                : "Offline"}
+            </p>
+
+            <p>
+              <strong>
+                Controller:
+              </strong>{" "}
               ESP32
+            </p>
+
+            <p>
+              <strong>
+                Database Path:
+              </strong>{" "}
+              devices/device001
             </p>
 
           </div>
