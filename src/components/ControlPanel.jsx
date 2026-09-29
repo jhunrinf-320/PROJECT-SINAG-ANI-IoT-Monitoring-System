@@ -1,25 +1,75 @@
 import { useEffect, useState } from "react";
 
-import { ref, set, onValue } from "firebase/database";
+import { initializeApp, getApps } from "firebase/app";
+import {
+  getDatabase,
+  ref,
+  set,
+  onValue,
+} from "firebase/database";
+
 import {
   getAuth,
   signInAnonymously,
   onAuthStateChanged,
 } from "firebase/auth";
 
-import { database, auth } from "../firebase/firebaseConfig";
+import "./ControlPanel.css";
+
+// ============================================================
+// FIREBASE CONFIG
+// ============================================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
+  authDomain: "sinag-ani-iot.firebaseapp.com",
+  databaseURL:
+    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sinag-ani-iot",
+  storageBucket: "sinag-ani-iot.firebasestorage.app",
+  messagingSenderId: "505006165687",
+  appId: "1:505006165687:web:8d930c2a846a978a41c732",
+  measurementId: "G-F1YD6L3XNL",
+};
+
+// ============================================================
+// FIREBASE INITIALIZATION
+// ============================================================
+
+const firebaseApp =
+  getApps().length > 0
+    ? getApps()[0]
+    : initializeApp(firebaseConfig);
+
+const database = getDatabase(firebaseApp);
+const auth = getAuth(firebaseApp);
+
+// ============================================================
+// DEVICE PATH
+// ============================================================
+
+const COMMAND_PATH =
+  "devices/device001/control/mode";
+
+// ============================================================
+// CONTROL PANEL
+// ============================================================
 
 function ControlPanel() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [currentCommand, setCurrentCommand] = useState("IDLE");
-  const [lastSent, setLastSent] = useState("NONE");
-  const [message, setMessage] = useState("Connecting to Firebase...");
-  const [sending, setSending] = useState(false);
+  const [authenticated, setAuthenticated] =
+    useState(false);
 
-  const commandRef = ref(
-    database,
-    "devices/device001/control/mode"
-  );
+  const [currentCommand, setCurrentCommand] =
+    useState("IDLE");
+
+  const [lastSent, setLastSent] =
+    useState("NONE");
+
+  const [message, setMessage] =
+    useState("Connecting to Firebase...");
+
+  const [sending, setSending] =
+    useState(false);
 
   // ==========================================================
   // FIREBASE AUTHENTICATION
@@ -36,6 +86,7 @@ function ControlPanel() {
             setAuthenticated(true);
             setMessage("Firebase connected.");
           }
+
           return;
         }
 
@@ -69,10 +120,15 @@ function ControlPanel() {
   }, []);
 
   // ==========================================================
-  // LISTEN TO COMMAND PATH
+  // LISTEN TO CURRENT COMMAND
   // ==========================================================
 
   useEffect(() => {
+    const commandRef = ref(
+      database,
+      COMMAND_PATH
+    );
+
     const unsubscribe = onValue(
       commandRef,
       (snapshot) => {
@@ -80,54 +136,55 @@ function ControlPanel() {
 
         if (value !== null) {
           setCurrentCommand(String(value));
-          console.log(
-            "Firebase command path:",
-            value
-          );
         }
       },
       (error) => {
         console.error(
-          "Command listener error:",
+          "Firebase command listener error:",
           error
         );
 
         setMessage(
-          "Cannot read Firebase command path."
+          "Cannot read Firebase command."
         );
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // ==========================================================
-  // SEND COMMAND TO ESP32
+  // SEND COMMAND
   // ==========================================================
 
   const sendCommand = async (command) => {
-    console.log("--------------------------------");
-    console.log(
-      "SINAG-ANI COMMAND:",
-      command
-    );
-    console.log(
-      "PATH:",
-      "devices/device001/control/mode"
-    );
+    if (sending) return;
 
     setSending(true);
+
     setMessage(
       `Sending ${command}...`
     );
 
-    try {
-      // Make absolutely sure the website is authenticated.
-      if (!auth.currentUser) {
-        console.log(
-          "No Firebase user. Signing in..."
-        );
+    console.log(
+      "================================"
+    );
 
+    console.log(
+      "SINAG-ANI COMMAND:",
+      command
+    );
+
+    console.log(
+      "FIREBASE PATH:",
+      COMMAND_PATH
+    );
+
+    try {
+      // Make sure user is authenticated
+      if (!auth.currentUser) {
         await signInAnonymously(auth);
       }
 
@@ -138,26 +195,31 @@ function ControlPanel() {
       }
 
       console.log(
-        "Authenticated UID:",
+        "Firebase UID:",
         auth.currentUser.uid
       );
 
-      // ======================================================
-      // ACTUAL COMMAND
-      // ======================================================
+      const commandRef = ref(
+        database,
+        COMMAND_PATH
+      );
 
-      await set(commandRef, command);
+      // WRITE COMMAND TO FIREBASE
+      await set(
+        commandRef,
+        command
+      );
 
       console.log(
-        "COMMAND SUCCESSFULLY WRITTEN:",
+        "COMMAND SENT SUCCESSFULLY:",
         command
       );
 
       setLastSent(command);
-      setMessage(
-        `${command} command sent to ESP32.`
-      );
 
+      setMessage(
+        `${command} command sent successfully.`
+      );
     } catch (error) {
       console.error(
         "COMMAND FAILED:",
@@ -209,12 +271,13 @@ function ControlPanel() {
     <div className="control-panel">
 
       <div className="control-header">
+
         <div>
           <h2>Drying Control</h2>
 
           <p>
-            Send commands directly to the
-            SINAG-ANI ESP32 through Firebase.
+            Control the SINAG-ANI drying
+            system through Firebase.
           </p>
         </div>
 
@@ -231,21 +294,19 @@ function ControlPanel() {
             ? "FIREBASE CONNECTED"
             : "FIREBASE DISCONNECTED"}
         </div>
+
       </div>
 
       {/* ====================================================
-          AUTOMATIC DRYING
+          AUTOMATIC CONTROL
       ==================================================== */}
 
       <div className="control-section">
 
-        <h3>
-          Automatic Drying
-        </h3>
+        <h3>Automatic Drying</h3>
 
         <p className="section-description">
-          Control the complete multi-stage
-          drying cycle.
+          Control the complete drying cycle.
         </p>
 
         <div className="control-buttons">
@@ -272,6 +333,7 @@ function ControlPanel() {
           />
 
         </div>
+
       </div>
 
       {/* ====================================================
@@ -280,12 +342,10 @@ function ControlPanel() {
 
       <div className="control-section">
 
-        <h3>
-          Manual Fan Control
-        </h3>
+        <h3>Manual Fan Control</h3>
 
         <p className="section-description">
-          Directly select the fan operating level.
+          Select the fan operating level.
         </p>
 
         <div className="control-buttons">
@@ -312,18 +372,17 @@ function ControlPanel() {
           />
 
         </div>
+
       </div>
 
       {/* ====================================================
-          COMMAND DEBUG
+          COMMAND STATUS
       ==================================================== */}
 
       <div className="command-status">
 
         <div>
-          <span>
-            Last sent:
-          </span>
+          <span>Last sent:</span>
 
           <strong>
             {lastSent}
@@ -331,9 +390,7 @@ function ControlPanel() {
         </div>
 
         <div>
-          <span>
-            Firebase value:
-          </span>
+          <span>Firebase command:</span>
 
           <strong>
             {currentCommand}
