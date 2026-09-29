@@ -1,46 +1,3 @@
-/* =========================================================
-   SINAG-ANI IoT DRYER DASHBOARD
-   Main Global Styles
-========================================================= */
-
-:root {
-  --green-dark: #14532d;
-  --green: #166534;
-  --green-light: #dcfce7;
-
-  --solar: #f59e0b;
-  --solar-light: #fef3c7;
-
-  --teal: #0f766e;
-  --teal-light: #ccfbf1;
-
-  --blue: #2563eb;
-  --blue-light: #dbeafe;
-
-  --red: #dc2626;
-  --red-light: #fee2e2;
-
-  --orange: #ea580c;
-  --orange-light: #ffedd5;
-
-  --navy: #172033;
-  --muted: #64748b;
-
-  --background: #f5f7fa;
-  --card: #ffffff;
-  --border: #e2e8f0;
-
-  --shadow:
-    0 8px 25px rgba(15, 23, 42, 0.07);
-
-  --shadow-hover:
-    0 14px 30px rgba(15, 23, 42, 0.12);
-}
-
-/* =========================================================
-   RESET
-========================================================= */
-
 * {
   box-sizing: border-box;
 }
@@ -50,194 +7,238 @@ body,
 #root {
   margin: 0;
   padding: 0;
-  width: 100%;
   min-height: 100%;
+  width: 100%;
 }
 
 body {
   font-family:
     Inter,
+    system-ui,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
-    Arial,
     sans-serif;
 
-  background: var(--background);
-  color: var(--navy);
+  background: #f4f6f8;
+  color: #17202a;
 }
 
-/* =========================================================
-   MAIN LAYOUT
-========================================================= */
+button {
+  font-family: inherit;
+}
 
-.layout {
-  display: flex;
+.app {
   min-height: 100vh;
-  width: 100%;
+  display: flex;
 }
 
-/* =========================================================
+/* =====================================================
    SIDEBAR
-========================================================= */
+===================================================== */
 
 .sidebar {
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
+  bottom: 0;
 
   width: 250px;
-  min-width: 250px;
-  height: 100vh;
 
-  padding: 28px 20px;
-
-  background:
-    linear-gradient(
-      180deg,
-      #14532d 0%,
-      #166534 55%,
-      #064e3b 100%
-    );
-
+  background: #111827;
   color: white;
 
   display: flex;
   flex-direction: column;
 
-  box-shadow:
-    5px 0 20px rgba(15, 23, 42, 0.08);
-
   z-index: 100;
+
+  transition: width 0.25s ease;
 }
 
-.sidebar h2 {
-  margin: 0;
-
-  font-size: 23px;
-  font-weight: 800;
-
-  color: white;
+.sidebar.closed {
+  width: 76px;
 }
 
-.sidebar h2::before {
-  content: "☀️ ";
-}
-
-.sidebar p {
-  margin: 6px 0 0;
-
-  color: #bbf7d0;
-
-  font-size: 13px;
-}
-
-.sidebar hr {
-  width: 100%;
-
-  border: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-
-  margin: 25px 0 15px;
-}
-
-/* Sidebar buttons */
-
-.sidebar button {
-  width: 100%;
+.brand {
+  height: 82px;
 
   display: flex;
   align-items: center;
 
-  padding: 13px 15px;
-  margin: 5px 0;
+  gap: 12px;
 
-  border: none;
+  padding: 16px;
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border-radius: 12px;
 
-  background: transparent;
-  color: #dcfce7;
-
-  text-align: left;
-
-  font-size: 15px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.sidebar button:hover {
-  background: rgba(255, 255, 255, 0.12);
-
-  color: white;
-
-  transform: translateX(2px);
-}
-
-.sidebar button.menu-active {
-  background: var(--solar) !important;
-
-  color: #422006 !important;
+  background: #ffffff;
+  color: #111827;
 
   font-weight: 800;
 }
 
-.sidebar button span {
-  width: 28px;
-
-  margin-right: 8px;
+.brand h2 {
+  margin: 0;
 
   font-size: 17px;
 }
 
-/* =========================================================
-   MAIN CONTENT
-========================================================= */
+.brand span {
+  font-size: 12px;
+  color: #9ca3af;
+}
 
-main {
-  flex: 1;
+.nav {
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
+.nav-item {
   width: 100%;
 
-  padding: 35px;
+  border: 0;
+  background: transparent;
 
-  min-width: 0;
+  color: #9ca3af;
+
+  padding: 13px 14px;
+
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  cursor: pointer;
+
+  text-align: left;
+
+  transition: 0.2s;
 }
 
-main h1 {
-  margin-top: 0;
-
-  color: var(--navy);
-
-  font-size: 32px;
-  font-weight: 800;
+.nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: white;
 }
 
-main h2 {
-  color: var(--navy);
-
-  font-size: 23px;
+.nav-item.active {
+  background: white;
+  color: #111827;
 }
 
-main h3 {
-  color: var(--muted);
-
-  font-size: 14px;
+.nav-icon {
+  width: 24px;
+  text-align: center;
+  font-size: 18px;
 }
 
-/* =========================================================
-   HEADER
-========================================================= */
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 16px;
+}
+
+.mini-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* =====================================================
+   MAIN
+===================================================== */
+
+.main {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+
+  min-height: 100vh;
+
+  transition:
+    margin-left 0.25s ease,
+    width 0.25s ease;
+}
+
+.main.closed {
+  margin-left: 76px;
+  width: calc(100% - 76px);
+}
+
+.topbar {
+  height: 70px;
+
+  background: white;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 25px;
+
+  gap: 18px;
+}
+
+.menu-button {
+  border: 0;
+  background: transparent;
+
+  font-size: 24px;
+
+  cursor: pointer;
+
+  color: #374151;
+}
+
+.topbar-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.topbar-device {
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #6b7280;
+
+  font-size: 13px;
+}
+
+/* =====================================================
+   CONTENT
+===================================================== */
+
+.content {
+  padding: 30px;
+
+  max-width: 1500px;
+  margin: 0 auto;
+}
 
 .page-header {
   display: flex;
-
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: flex-start;
 
   gap: 20px;
 
@@ -245,658 +246,412 @@ main h3 {
 }
 
 .page-header h1 {
-  margin-bottom: 8px;
+  margin: 4px 0 5px;
+
+  font-size: 32px;
 }
 
 .page-header p {
-  margin-top: 0;
+  margin: 0;
 
-  color: var(--muted);
-
-  font-size: 15px;
+  color: #6b7280;
 }
 
-/* =========================================================
-   ONLINE / OFFLINE STATUS
-========================================================= */
+.eyebrow {
+  color: #6b7280;
 
-.status-online,
-.status-offline {
-  display: inline-flex;
-
-  align-items: center;
-
-  gap: 8px;
-
-  padding: 9px 15px;
-
-  border-radius: 999px;
-
-  font-size: 13px;
+  font-size: 11px;
 
   font-weight: 800;
 
-  margin-bottom: 20px;
+  letter-spacing: 1.2px;
 }
 
-.status-online {
-  background: var(--green-light);
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
-  color: var(--green);
+  font-size: 13px;
+  color: #6b7280;
 }
 
-.status-offline {
-  background: var(--red-light);
-
-  color: var(--red);
-}
-
-.status-online::before,
-.status-offline::before {
-  content: "";
-
+.connection-dot {
   width: 9px;
   height: 9px;
 
   border-radius: 50%;
+
+  background: #9ca3af;
+
+  display: inline-block;
 }
 
-.status-online::before {
+.connection-dot.connected {
   background: #22c55e;
 }
 
-.status-offline::before {
-  background: #ef4444;
+/* =====================================================
+   DRYING STATUS
+===================================================== */
+
+.drying-status-card,
+.control-card,
+.settings-card {
+  background: white;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 16px;
+
+  padding: 24px;
+
+  margin-bottom: 24px;
+
+  box-shadow:
+    0 3px 12px rgba(0,0,0,0.04);
 }
 
-/* =========================================================
-   SENSOR SECTION
-========================================================= */
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-.cards {
-  display: grid;
+  gap: 20px;
 
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(220px, 1fr)
-    );
-
-  gap: 18px;
-
-  width: 100%;
+  margin-bottom: 22px;
 }
 
-/* =========================================================
-   SENSOR CARD
-========================================================= */
+.card-heading h2 {
+  margin: 5px 0 0;
 
-.sensor-card {
-  position: relative;
-
-  background: var(--card);
-
-  border: 1px solid var(--border);
-
-  border-radius: 18px;
-
-  padding: 23px;
-
-  box-shadow: var(--shadow);
-
-  min-height: 155px;
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  font-size: 21px;
 }
 
-.sensor-card:hover {
-  transform: translateY(-3px);
+.status-pill {
+  display: flex;
+  align-items: center;
 
-  box-shadow: var(--shadow-hover);
-}
+  gap: 7px;
 
-.sensor-card h3 {
-  margin: 0;
+  padding: 7px 11px;
 
-  color: var(--muted);
+  border-radius: 999px;
 
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.sensor-card h1 {
-  margin: 15px 0 0;
-
-  color: var(--navy);
-
-  font-size: 38px;
+  font-size: 11px;
 
   font-weight: 800;
-
-  line-height: 1;
 }
 
-.sensor-card span {
-  color: var(--muted);
-
-  font-size: 14px;
+.status-pill.online {
+  background: #dcfce7;
+  color: #166534;
 }
 
-/* =========================================================
-   GENERAL CARDS
-========================================================= */
-
-.status-card,
-.control,
-.control-panel,
-.chart,
-.settings-box {
-  width: 100%;
-
-  margin-top: 22px;
-
-  padding: 25px;
-
-  background: var(--card);
-
-  border: 1px solid var(--border);
-
-  border-radius: 18px;
-
-  box-shadow: var(--shadow);
+.status-pill.offline {
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
-/* =========================================================
-   DRYING STATUS
-========================================================= */
+.status-dot {
+  width: 7px;
+  height: 7px;
 
-.status-card {
-  border-top: 4px solid var(--solar);
+  border-radius: 50%;
+
+  background: currentColor;
 }
-
-.status-card h2 {
-  margin-top: 0;
-
-  color: var(--green-dark);
-}
-
-.status-card p {
-  color: var(--muted);
-
-  line-height: 1.6;
-}
-
-/* Status information */
 
 .status-grid {
   display: grid;
 
   grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(170px, 1fr)
-    );
+    repeat(4, minmax(0, 1fr));
 
   gap: 12px;
-
-  margin-top: 20px;
 }
 
 .status-item {
-  padding: 16px;
+  padding: 15px;
 
   background: #f8fafc;
 
-  border: 1px solid var(--border);
-
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .status-item span {
   display: block;
 
-  color: var(--muted);
+  color: #6b7280;
 
   font-size: 12px;
 
-  font-weight: 650;
-
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 
 .status-item strong {
-  display: block;
-
-  color: var(--navy);
-
-  font-size: 19px;
+  font-size: 16px;
 }
 
-/* =========================================================
-   PROGRESS BAR
-========================================================= */
+/* =====================================================
+   SENSORS
+===================================================== */
 
-.progress-container {
-  width: 100%;
-
-  margin-top: 18px;
-}
-
-.progress-label {
-  display: flex;
-
-  justify-content: space-between;
-
-  margin-bottom: 7px;
-
-  color: var(--muted);
-
-  font-size: 13px;
-
-  font-weight: 650;
-}
-
-.progress-bar {
-  width: 100%;
-
-  height: 10px;
-
-  overflow: hidden;
-
-  background: #e5e7eb;
-
-  border-radius: 999px;
-}
-
-.progress-fill {
-  height: 100%;
-
-  border-radius: 999px;
-
-  background:
-    linear-gradient(
-      90deg,
-      var(--green),
-      var(--solar)
-    );
-
-  transition: width 0.4s ease;
-}
-
-/* =========================================================
-   CONTROL PANEL
-========================================================= */
-
-.control h2,
-.control-panel h2 {
-  margin-top: 0;
-
-  color: var(--green-dark);
-}
-
-.control-buttons {
+.sensor-grid {
   display: grid;
 
   grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(150px, 1fr)
-    );
+    repeat(4, minmax(0, 1fr));
 
-  gap: 12px;
+  gap: 16px;
 
-  margin-top: 20px;
+  margin-bottom: 24px;
 }
 
-.control-buttons button {
-  min-height: 50px;
+.sensor-card {
+  background: white;
 
-  margin: 0;
+  border: 1px solid #e5e7eb;
 
-  padding: 12px 18px;
+  border-radius: 15px;
 
-  border: none;
+  padding: 20px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+
+  min-height: 120px;
+
+  box-shadow:
+    0 3px 12px rgba(0,0,0,0.04);
+}
+
+.sensor-icon {
+  width: 48px;
+  height: 48px;
 
   border-radius: 12px;
 
-  background: var(--green);
+  background: #f1f5f9;
 
-  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 800;
 
   font-size: 14px;
+}
 
-  font-weight: 750;
+.sensor-info > span {
+  display: block;
+
+  color: #6b7280;
+
+  font-size: 12px;
+
+  margin-bottom: 5px;
+}
+
+.sensor-value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.sensor-value strong {
+  font-size: 27px;
+}
+
+.sensor-value small {
+  color: #6b7280;
+}
+
+/* =====================================================
+   CONTROLS
+===================================================== */
+
+.control-card h2 {
+  margin: 5px 0 0;
+}
+
+.control-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.control-btn {
+  border: 0;
+
+  min-height: 58px;
+
+  border-radius: 10px;
+
+  background: #f1f5f9;
+
+  color: #111827;
+
+  font-weight: 800;
 
   cursor: pointer;
 
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.2s ease;
+  transition: transform 0.15s, opacity 0.15s;
 }
 
-.control-buttons button:hover {
-  background: var(--green-dark);
-
+.control-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-
-  box-shadow:
-    0 7px 18px rgba(22, 101, 52, 0.2);
 }
 
-.control-buttons button:first-child {
-  background: var(--solar);
-
-  color: #422006;
-}
-
-.control-buttons button:first-child:hover {
-  background: #d97706;
-}
-
-.control-buttons button:disabled {
-  opacity: 0.55;
-
+.control-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-
-  transform: none;
-
-  box-shadow: none;
 }
 
-/* Generic buttons */
-
-button {
-  font-family: inherit;
+.control-btn.start {
+  background: #16a34a;
+  color: white;
 }
 
-/* =========================================================
-   COMMAND STATUS
-========================================================= */
+.control-btn.high {
+  background: #f59e0b;
+  color: white;
+}
 
-.command-status {
+.control-btn.moderate-high {
+  background: #eab308;
+  color: white;
+}
+
+.control-btn.moderate {
+  background: #84cc16;
+  color: white;
+}
+
+.control-btn.stop {
+  background: #dc2626;
+  color: white;
+}
+
+.command-message {
   margin-top: 15px;
 
-  padding: 12px 15px;
+  padding: 12px;
 
-  background: #f8fafc;
+  border-radius: 9px;
 
-  border: 1px solid var(--border);
+  background: #f1f5f9;
 
-  border-radius: 10px;
+  color: #475569;
 
-  color: var(--muted);
-
-  font-size: 14px;
+  font-size: 13px;
 }
 
-/* =========================================================
+/* =====================================================
    SETTINGS
-========================================================= */
+===================================================== */
 
-.settings-box {
-  border-top: 4px solid var(--teal);
+.settings-card {
+  max-width: 700px;
 }
 
-.settings-box h2 {
-  margin-top: 0;
+.settings-row {
+  display: flex;
+  justify-content: space-between;
 
-  color: var(--teal);
+  padding: 17px 0;
+
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.settings-box p {
-  padding: 14px 16px;
-
-  margin: 10px 0;
-
-  background: #f8fafc;
-
-  border: 1px solid var(--border);
-
-  border-radius: 10px;
-
-  font-size: 15px;
+.settings-row:last-child {
+  border-bottom: 0;
 }
 
-/* =========================================================
-   CHART
-========================================================= */
-
-.chart {
-  border-top: 4px solid var(--teal);
-
-  min-height: 300px;
+.settings-row span {
+  color: #6b7280;
 }
 
-.chart h2 {
-  margin-top: 0;
-
-  color: var(--teal);
+.settings-row strong {
+  color: #111827;
 }
 
-/* =========================================================
-   ERROR / LOADING
-========================================================= */
+/* =====================================================
+   MOBILE
+===================================================== */
 
-.error-message {
-  padding: 15px 18px;
+@media (max-width: 1000px) {
 
-  margin-top: 15px;
-
-  background: var(--red-light);
-
-  border: 1px solid #fecaca;
-
-  border-radius: 12px;
-
-  color: var(--red);
-
-  font-size: 14px;
-
-  font-weight: 600;
-}
-
-.loading-message {
-  padding: 20px;
-
-  color: var(--muted);
-
-  text-align: center;
-}
-
-/* =========================================================
-   RESPONSIVE TABLET
-========================================================= */
-
-@media (max-width: 900px) {
-  .sidebar {
-    width: 210px;
-    min-width: 210px;
-  }
-
-  main {
-    padding: 25px;
-  }
-
-  .cards {
+  .status-grid {
     grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
+      repeat(2, minmax(0, 1fr));
   }
+
+  .sensor-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .control-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
 }
 
-/* =========================================================
-   RESPONSIVE MOBILE
-========================================================= */
-
-@media (max-width: 768px) {
-  .layout {
-    display: block;
-
-    min-height: 100vh;
-  }
+@media (max-width: 700px) {
 
   .sidebar {
-    position: sticky;
+    width: 220px;
+    transform: translateX(-100%);
+  }
 
-    top: 0;
+  .sidebar.open {
+    transform: translateX(0);
+  }
 
+  .sidebar.closed {
+    width: 220px;
+  }
+
+  .main,
+  .main.closed {
+    margin-left: 0;
     width: 100%;
-    min-width: 100%;
-
-    height: auto;
-
-    padding: 14px 12px;
-
-    display: block;
-
-    background:
-      linear-gradient(
-        90deg,
-        #14532d,
-        #166534,
-        #0f766e
-      );
   }
 
-  .sidebar h2 {
-    font-size: 19px;
-  }
-
-  .sidebar p {
-    font-size: 11px;
-  }
-
-  .sidebar hr {
-    margin: 12px 0 8px;
-  }
-
-  .sidebar button {
-    width: auto;
-
-    display: inline-flex;
-
-    padding: 9px 11px;
-
-    margin: 3px 2px;
-
-    border-radius: 9px;
-
-    font-size: 12px;
-  }
-
-  .sidebar button span {
-    width: auto;
-
-    margin-right: 5px;
-
-    font-size: 14px;
-  }
-
-  main {
-    width: 100%;
-
-    padding: 20px 14px 35px;
-  }
-
-  main h1 {
-    font-size: 25px;
-  }
-
-  main h2 {
-    font-size: 20px;
+  .content {
+    padding: 18px;
   }
 
   .page-header {
-    display: block;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .cards {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-
-    gap: 12px;
-  }
-
-  .sensor-card {
-    min-height: 140px;
-
-    padding: 15px;
-
-    border-radius: 15px;
-  }
-
-  .sensor-card h1 {
-    font-size: 29px;
-  }
-
-  .status-online,
-  .status-offline {
-    margin-bottom: 18px;
-
-    padding: 7px 12px;
-
-    font-size: 12px;
-  }
-
-  .control,
-  .control-panel,
-  .status-card,
-  .settings-box,
-  .chart {
-    padding: 17px;
-
-    border-radius: 15px;
-  }
-
-  .control-buttons {
-    grid-template-columns: 1fr;
-
-    gap: 10px;
-  }
-
-  .control-buttons button {
-    width: 100%;
-  }
-
-  .status-grid {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-  }
-}
-
-/* =========================================================
-   SMALL PHONE
-========================================================= */
-
-@media (max-width: 420px) {
-  main {
-    padding: 16px 10px 30px;
-  }
-
-  main h1 {
-    font-size: 22px;
-  }
-
-  .cards {
-    grid-template-columns: 1fr;
+  .page-header h1 {
+    font-size: 26px;
   }
 
   .status-grid {
     grid-template-columns: 1fr;
   }
 
-  .sensor-card h1 {
-    font-size: 32px;
+  .sensor-grid {
+    grid-template-columns: 1fr;
   }
+
+  .control-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 0 16px;
+  }
+
 }
