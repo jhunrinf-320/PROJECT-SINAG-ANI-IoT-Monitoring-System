@@ -1,21 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { ref, onValue } from "firebase/database";
 
-import {
-  initializeApp,
-  getApps
-} from "firebase/app";
-
-import {
-  getDatabase,
-  ref,
-  onValue
-} from "firebase/database";
-
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInAnonymously
-} from "firebase/auth";
+import { database } from "./firebase/firebaseConfig";
 
 import Sidebar from "./components/Sidebar";
 import SensorCard from "./components/SensorCard";
@@ -23,494 +9,241 @@ import StatusCard from "./components/StatusCard";
 import ControlPanel from "./components/ControlPanel";
 import TemperatureChart from "./components/TemperatureChart";
 
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
-  authDomain: "sinag-ani-iot.firebaseapp.com",
-  databaseURL:
-    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "sinag-ani-iot",
-  storageBucket: "sinag-ani-iot.firebasestorage.app",
-  messagingSenderId: "505006165687",
-  appId: "1:505006165687:web:8d930c2a846a978a41c732",
-  measurementId: "G-F1YD6L3XNL"
-};
-
-
-const firebaseApp =
-  getApps().length > 0
-    ? getApps()[0]
-    : initializeApp(firebaseConfig);
-
-const database =
-  getDatabase(firebaseApp);
-
-const auth =
-  getAuth(firebaseApp);
-
-
 function App() {
-
   const [device, setDevice] = useState({});
   const [history, setHistory] = useState([]);
-  const [activePage, setActivePage] =
-    useState("Dashboard");
+  const [activePage, setActivePage] = useState("Dashboard");
 
-  const [firebaseOnline, setFirebaseOnline] =
-    useState(false);
-
-
-  /* ============================================
-     FIREBASE
-  ============================================ */
-
+  // ==========================================
+  // FIREBASE DEVICE LISTENER
+  // ==========================================
   useEffect(() => {
+    const deviceRef = ref(database, "devices/device001");
 
-    let unsubscribeDevice = null;
+    const unsubscribe = onValue(
+      deviceRef,
+      (snapshot) => {
+        const data = snapshot.val();
 
-    const unsubscribeAuth =
-      onAuthStateChanged(
-        auth,
-        async (user) => {
+        if (data) {
+          setDevice(data);
 
-          try {
-
-            if (!user) {
-
-              await signInAnonymously(auth);
-
-              return;
-            }
-
-
-            setFirebaseOnline(true);
-
-
-            const deviceRef =
-              ref(
-                database,
-                "devices/device001"
-              );
-
-
-            unsubscribeDevice =
-              onValue(
-                deviceRef,
-                (snapshot) => {
-
-                  const data =
-                    snapshot.val();
-
-                  console.log(
-                    "SINAG-ANI DATA:",
-                    data
-                  );
-
-
-                  if (!data) return;
-
-
-                  setDevice(data);
-
-
-                  const temperature =
-                    data?.sensors?.temp1;
-
-
-                  if (
-                    typeof temperature ===
-                      "number"
-                  ) {
-
-                    setHistory(
-                      previous => [
-
-                        ...previous.slice(-19),
-
-                        {
-                          time:
-                            new Date()
-                              .toLocaleTimeString(),
-
-                          temp:
-                            temperature
-                        }
-
-                      ]
-                    );
-
-                  }
-
-                },
-
-                (error) => {
-
-                  console.error(
-                    "Firebase error:",
-                    error
-                  );
-
-                  setFirebaseOnline(false);
-
-                }
-              );
-
+          if (data.sensors?.temp1 !== undefined) {
+            setHistory((previous) => [
+              ...previous.slice(-9),
+              {
+                time: new Date().toLocaleTimeString(),
+                temp: Number(data.sensors.temp1),
+              },
+            ]);
           }
-
-          catch (error) {
-
-            console.error(
-              "Authentication error:",
-              error
-            );
-
-            setFirebaseOnline(false);
-
-          }
-
         }
-      );
-
-
-    return () => {
-
-      unsubscribeAuth();
-
-      if (unsubscribeDevice) {
-
-        unsubscribeDevice();
-
+      },
+      (error) => {
+        console.error("Firebase listener error:", error);
       }
+    );
 
-    };
-
+    return () => unsubscribe();
   }, []);
 
-
-  /* ============================================
-     SENSOR DATA
-  ============================================ */
-
-  const temp1 =
-    device?.sensors?.temp1;
-
-  const temp2 =
-    device?.sensors?.temp2;
-
-  const humidity =
-    device?.sensors?.humidity;
-
-  const dht11Temperature =
-    device?.sensors?.dht11Temperature;
-
-
-  /* ============================================
-     DEVICE STATUS
-  ============================================ */
-
-  const deviceOnline =
+  // ==========================================
+  // DEVICE STATUS
+  // ==========================================
+  const isOnline =
     device?.status?.online === true ||
-    device?.status?.online === 1 ||
-    device?.status?.online === "1";
+    device?.sensors?.online === true ||
+    device?.online === true;
 
-
-  /* ============================================
-     PAGE
-  ============================================ */
-
+  // ==========================================
+  // MAIN APP
+  // ==========================================
   return (
-
     <div className="layout">
 
-
-      {/* SIDEBAR */}
-
+      {/* ======================================
+          SIDEBAR
+      ====================================== */}
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
       />
 
-
-      {/* MAIN */}
-
+      {/* ======================================
+          MAIN CONTENT
+      ====================================== */}
       <main>
 
+        {/* ====================================
+            HEADER
+        ==================================== */}
+        <div className="page-header">
+          <h1>SINAG-ANI IoT Dashboard</h1>
 
-        {/* ======================================
+          <div
+            className={
+              isOnline
+                ? "status-online"
+                : "status-offline"
+            }
+          >
+            ● {isOnline ? "DEVICE ONLINE" : "DEVICE OFFLINE"}
+          </div>
+        </div>
+
+        {/* ====================================
             DASHBOARD
-        ====================================== */}
-
+        ==================================== */}
         {activePage === "Dashboard" && (
-
           <>
+            <section>
+              <h2>System Overview</h2>
 
-            <h1>
-              SINAG-ANI IoT Dashboard
-            </h1>
+              <div className="cards">
 
+                <SensorCard
+                  title="Temperature Sensor 1"
+                  value={device?.sensors?.temp1}
+                  unit="°C"
+                  icon="🌡️"
+                />
 
-            <p>
-              Real-time monitoring and
-              multi-stage drying control
-            </p>
+                <SensorCard
+                  title="Temperature Sensor 2"
+                  value={device?.sensors?.temp2}
+                  unit="°C"
+                  icon="🔥"
+                />
 
+                <SensorCard
+                  title="Humidity"
+                  value={device?.sensors?.humidity}
+                  unit="%"
+                  icon="💧"
+                />
 
-            {/* ONLINE */}
+              </div>
+            </section>
 
-            <div
-              className={
-                deviceOnline &&
-                firebaseOnline
-                  ? "status-online"
-                  : "status-offline"
-              }
-            >
+            {/* =================================
+                DRYING STATUS
+            ================================= */}
+            <section className="dashboard-section">
 
-              ●{" "}
-
-              {deviceOnline &&
-              firebaseOnline
-                ? "DEVICE ONLINE"
-                : "DEVICE OFFLINE"}
-
-            </div>
-
-
-            {/* SENSOR CARDS */}
-
-            <div className="cards">
-
-              <SensorCard
-                title="Temperature Sensor 1"
-                value={temp1}
-                unit="°C"
-                icon="🌡️"
+              <StatusCard
+                mode={device?.status?.mode}
+                pwm={device?.status?.pwm}
+                stage={device?.status?.stage}
+                online={device?.status?.online}
+                automatic={device?.status?.automatic}
+                paused={device?.status?.paused}
+                stageElapsedSeconds={
+                  device?.status?.stageElapsedSeconds
+                }
+                stageRemainingSeconds={
+                  device?.status?.stageRemainingSeconds
+                }
+                totalElapsedSeconds={
+                  device?.status?.totalElapsedSeconds
+                }
+                totalRemainingSeconds={
+                  device?.status?.totalRemainingSeconds
+                }
+                coolFan={device?.status?.coolFan}
               />
 
+            </section>
 
-              <SensorCard
-                title="Temperature Sensor 2"
-                value={temp2}
-                unit="°C"
-                icon="🌡️"
-              />
+            {/* =================================
+                DRYING CONTROL
+            ================================= */}
+            <section className="dashboard-section">
 
+              <ControlPanel />
 
-              <SensorCard
-                title="Humidity"
-                value={humidity}
-                unit="%"
-                icon="💧"
-              />
-
-
-              <SensorCard
-                title="DHT11 Temperature"
-                value={dht11Temperature}
-                unit="°C"
-                icon="🌡️"
-              />
-
-            </div>
-
-
-            {/* DRYING STATUS */}
-
-            <StatusCard
-              mode={
-                device?.status?.mode
-              }
-
-              pwm={
-                device?.status?.pwm
-              }
-
-              stage={
-                device?.status?.stage
-              }
-
-              online={
-                device?.status?.online
-              }
-
-              automatic={
-                device?.status?.automatic
-              }
-
-              paused={
-                device?.status?.paused
-              }
-
-              stageElapsedSeconds={
-                device?.status
-                  ?.stageElapsedSeconds
-              }
-
-              stageRemainingSeconds={
-                device?.status
-                  ?.stageRemainingSeconds
-              }
-
-              totalElapsedSeconds={
-                device?.status
-                  ?.totalElapsedSeconds
-              }
-
-              totalRemainingSeconds={
-                device?.status
-                  ?.totalRemainingSeconds
-              }
-
-              coolFan={
-                device?.status?.coolFan
-              }
-
-            />
-
-
-            {/* CONTROL PANEL */}
-
-            <ControlPanel />
-
+            </section>
           </>
-
         )}
 
-
-        {/* ======================================
+        {/* ====================================
             MONITORING
-        ====================================== */}
-
+        ==================================== */}
         {activePage === "Monitoring" && (
-
           <>
-
-            <h1>
-              Sensor Monitoring
-            </h1>
-
+            <h2>Sensor Monitoring</h2>
 
             <div className="cards">
 
               <SensorCard
                 title="Temperature Sensor 1"
-                value={temp1}
+                value={device?.sensors?.temp1}
                 unit="°C"
                 icon="🌡️"
               />
-
 
               <SensorCard
                 title="Temperature Sensor 2"
-                value={temp2}
+                value={device?.sensors?.temp2}
                 unit="°C"
-                icon="🌡️"
+                icon="🔥"
               />
-
 
               <SensorCard
                 title="Humidity"
-                value={humidity}
+                value={device?.sensors?.humidity}
                 unit="%"
                 icon="💧"
               />
 
-
-              <SensorCard
-                title="DHT11 Temperature"
-                value={dht11Temperature}
-                unit="°C"
-                icon="🌡️"
-              />
-
             </div>
 
-
-            <TemperatureChart
-              data={history}
-            />
-
+            <TemperatureChart data={history} />
           </>
-
         )}
 
-
-        {/* ======================================
+        {/* ====================================
             CONTROL
-        ====================================== */}
-
+        ==================================== */}
         {activePage === "Control" && (
-
           <>
-
-            <h1>
-              Drying Control
-            </h1>
-
+            <h2>Drying Control</h2>
 
             <ControlPanel />
-
           </>
-
         )}
 
-
-        {/* ======================================
+        {/* ====================================
             SETTINGS
-        ====================================== */}
-
+        ==================================== */}
         {activePage === "Settings" && (
-
           <div className="settings-box">
 
-            <h1>
-              System Settings
-            </h1>
+            <h2>System Settings</h2>
 
             <p>
-              Device ID: <strong>
-                device001
-              </strong>
+              <strong>Device ID:</strong> device001
             </p>
 
             <p>
-              Firebase:
-              {" "}
-              <strong>
-                {firebaseOnline
-                  ? "Connected"
-                  : "Disconnected"}
-              </strong>
+              <strong>Firebase Connection:</strong>{" "}
+              Active
             </p>
 
             <p>
-              Device:
-              {" "}
-              <strong>
-                {deviceOnline
-                  ? "Online"
-                  : "Offline"}
-              </strong>
+              <strong>Controller:</strong> ESP32
             </p>
 
             <p>
-              Controller:
-              {" "}
-              <strong>
-                ESP32
-              </strong>
+              <strong>Database:</strong>{" "}
+              sinag-ani-iot
             </p>
 
           </div>
-
         )}
 
       </main>
-
     </div>
-
   );
-
 }
 
 export default App;
