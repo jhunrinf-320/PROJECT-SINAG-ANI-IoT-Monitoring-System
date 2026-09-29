@@ -1,65 +1,52 @@
-import { useState } from "react";
-
 import {
-  initializeApp,
-  getApps,
-  getApp,
-} from "firebase/app";
-
-import {
-  getDatabase,
+  database,
   ref,
   set,
-} from "firebase/database";
-
-import {
-  getAuth,
+  auth,
   signInAnonymously,
-} from "firebase/auth";
+} from "../firebase/firebaseConfig";
 
-// ==========================================
-// FIREBASE CONFIG
-// ==========================================
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
-  authDomain: "sinag-ani-iot.firebaseapp.com",
-  databaseURL:
-    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "sinag-ani-iot",
-  storageBucket: "sinag-ani-iot.firebasestorage.app",
-  messagingSenderId: "505006165687",
-  appId: "1:505006165687:web:8d930c2a846a978a41c732",
-  measurementId: "G-F1YD6L3XNL",
-};
-
-const firebaseApp =
-  getApps().length > 0
-    ? getApp()
-    : initializeApp(firebaseConfig);
-
-const database = getDatabase(firebaseApp);
-const auth = getAuth(firebaseApp);
+import { useState } from "react";
 
 function ControlPanel() {
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState("");
+
+  const [sending, setSending] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  // ==========================================
+  // SEND FIREBASE COMMAND
+  // ==========================================
 
   const command = async (mode) => {
+
     try {
+
       setSending(true);
+
       setMessage("Sending...");
+
+      // Make sure user is authenticated
 
       if (!auth.currentUser) {
         await signInAnonymously(auth);
       }
+
+      // Firebase control path
 
       const commandRef = ref(
         database,
         "devices/device001/control/mode"
       );
 
-      await set(commandRef, mode);
+      // Send command
+
+      await set(
+        commandRef,
+        mode
+      );
 
       console.log(
         "Firebase command sent:",
@@ -71,31 +58,29 @@ function ControlPanel() {
       );
 
     } catch (error) {
+
       console.error(
-        "Command failed:",
+        "Firebase command failed:",
         error
       );
 
-      setMessage("Command failed");
+      setMessage(
+        "Command failed"
+      );
 
     } finally {
+
       setSending(false);
+
     }
   };
 
   return (
-    <div
-      className="control-panel"
-      style={{
-        marginTop: "25px",
-        padding: "25px",
-        borderRadius: "15px",
-        border: "1px solid #ddd",
-        background: "#fff",
-      }}
-    >
+    <div className="control-panel">
 
-      <h2>DRYING CONTROL</h2>
+      <h2>
+        DRYING CONTROL
+      </h2>
 
       <p>
         Select a drying operation:
@@ -111,37 +96,51 @@ function ControlPanel() {
         }}
       >
 
-        <button
-          type="button"
-          disabled={sending}
-          onClick={() => command("HIGH")}
-          style={{
-            padding: "14px 20px",
-            borderRadius: "8px",
-            border: "none",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-        >
-          INITIAL HIGH
-        </button>
+        {/* INITIAL */}
 
         <button
           type="button"
           disabled={sending}
           onClick={() =>
-            command("MODERATE-HIGH")
+            command("HIGH")
           }
           style={{
             padding: "14px 20px",
             borderRadius: "8px",
             border: "none",
             fontWeight: "bold",
-            cursor: "pointer",
+            cursor: sending
+              ? "wait"
+              : "pointer",
+          }}
+        >
+          INITIAL HIGH
+        </button>
+
+        {/* MAIN */}
+
+        <button
+          type="button"
+          disabled={sending}
+          onClick={() =>
+            command(
+              "MODERATE-HIGH"
+            )
+          }
+          style={{
+            padding: "14px 20px",
+            borderRadius: "8px",
+            border: "none",
+            fontWeight: "bold",
+            cursor: sending
+              ? "wait"
+              : "pointer",
           }}
         >
           MAIN DRYING
         </button>
+
+        {/* FINAL */}
 
         <button
           type="button"
@@ -154,11 +153,15 @@ function ControlPanel() {
             borderRadius: "8px",
             border: "none",
             fontWeight: "bold",
-            cursor: "pointer",
+            cursor: sending
+              ? "wait"
+              : "pointer",
           }}
         >
           FINAL DRYING
         </button>
+
+        {/* STOP */}
 
         <button
           type="button"
@@ -171,13 +174,17 @@ function ControlPanel() {
             borderRadius: "8px",
             border: "none",
             fontWeight: "bold",
-            cursor: "pointer",
+            cursor: sending
+              ? "wait"
+              : "pointer",
           }}
         >
           STOP
         </button>
 
       </div>
+
+      {/* COMMAND RESULT */}
 
       {message && (
         <p
