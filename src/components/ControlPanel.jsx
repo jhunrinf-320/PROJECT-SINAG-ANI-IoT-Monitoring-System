@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { initializeApp, getApps } from "firebase/app";
+import {
+  initializeApp,
+  getApps,
+} from "firebase/app";
+
 import {
   getDatabase,
   ref,
@@ -15,7 +19,7 @@ import {
 } from "firebase/auth";
 
 // ============================================================
-// FIREBASE CONFIG
+// FIREBASE
 // ============================================================
 
 const firebaseConfig = {
@@ -30,10 +34,6 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL",
 };
 
-// ============================================================
-// FIREBASE INITIALIZATION
-// ============================================================
-
 const firebaseApp =
   getApps().length > 0
     ? getApps()[0]
@@ -41,10 +41,6 @@ const firebaseApp =
 
 const database = getDatabase(firebaseApp);
 const auth = getAuth(firebaseApp);
-
-// ============================================================
-// DEVICE PATH
-// ============================================================
 
 const COMMAND_PATH =
   "devices/device001/control/mode";
@@ -64,52 +60,57 @@ function ControlPanel() {
     useState("NONE");
 
   const [message, setMessage] =
-    useState("Connecting to Firebase...");
+    useState("Connecting...");
 
   const [sending, setSending] =
     useState(false);
 
   // ==========================================================
-  // FIREBASE AUTHENTICATION
+  // AUTH
   // ==========================================================
 
   useEffect(() => {
     let mounted = true;
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (user) => {
-        if (user) {
-          if (mounted) {
-            setAuthenticated(true);
-            setMessage("Firebase connected.");
-          }
+    const unsubscribe =
+      onAuthStateChanged(
+        auth,
+        async (user) => {
+          try {
+            if (user) {
+              if (mounted) {
+                setAuthenticated(true);
+                setMessage(
+                  "Firebase connected."
+                );
+              }
 
-          return;
-        }
+              return;
+            }
 
-        try {
-          await signInAnonymously(auth);
+            await signInAnonymously(auth);
 
-          if (mounted) {
-            setAuthenticated(true);
-            setMessage("Firebase connected.");
-          }
-        } catch (error) {
-          console.error(
-            "Firebase authentication failed:",
-            error
-          );
-
-          if (mounted) {
-            setAuthenticated(false);
-            setMessage(
-              "Firebase authentication failed."
+            if (mounted) {
+              setAuthenticated(true);
+              setMessage(
+                "Firebase connected."
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Firebase authentication failed:",
+              error
             );
+
+            if (mounted) {
+              setAuthenticated(false);
+              setMessage(
+                "Firebase authentication failed."
+              );
+            }
           }
         }
-      }
-    );
+      );
 
     return () => {
       mounted = false;
@@ -118,7 +119,7 @@ function ControlPanel() {
   }, []);
 
   // ==========================================================
-  // LISTEN TO CURRENT COMMAND
+  // LISTEN TO COMMAND
   // ==========================================================
 
   useEffect(() => {
@@ -133,24 +134,20 @@ function ControlPanel() {
         const value = snapshot.val();
 
         if (value !== null) {
-          setCurrentCommand(String(value));
+          setCurrentCommand(
+            String(value)
+          );
         }
       },
       (error) => {
         console.error(
-          "Firebase command listener error:",
+          "Command listener error:",
           error
-        );
-
-        setMessage(
-          "Cannot read Firebase command."
         );
       }
     );
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   // ==========================================================
@@ -176,12 +173,11 @@ function ControlPanel() {
     );
 
     console.log(
-      "FIREBASE PATH:",
+      "PATH:",
       COMMAND_PATH
     );
 
     try {
-      // Make sure user is authenticated
       if (!auth.currentUser) {
         await signInAnonymously(auth);
       }
@@ -192,32 +188,27 @@ function ControlPanel() {
         );
       }
 
-      console.log(
-        "Firebase UID:",
-        auth.currentUser.uid
-      );
-
       const commandRef = ref(
         database,
         COMMAND_PATH
       );
 
-      // WRITE COMMAND TO FIREBASE
       await set(
         commandRef,
         command
       );
 
       console.log(
-        "COMMAND SENT SUCCESSFULLY:",
+        "COMMAND SENT:",
         command
       );
 
       setLastSent(command);
 
       setMessage(
-        `${command} command sent successfully.`
+        `${command} command sent to ESP32.`
       );
+
     } catch (error) {
       console.error(
         "COMMAND FAILED:",
@@ -261,71 +252,80 @@ function ControlPanel() {
     );
   };
 
-  // ==========================================================
-  // UI
-  // ==========================================================
-
   return (
-    <div className="control-panel">
+    <div className="control-card">
 
-      <div className="control-header">
+      {/* ====================================================
+          CONNECTION
+      ==================================================== */}
+
+      <div className="control-card-header">
 
         <div>
-          <h2>Drying Control</h2>
+          <span className="card-eyebrow">
+            ESP32 CONTROL
+          </span>
+
+          <h2>
+            Drying Control
+          </h2>
 
           <p>
-            Control the SINAG-ANI drying
-            system through Firebase.
+            Commands are sent to the
+            SINAG-ANI ESP32 through Firebase.
           </p>
         </div>
 
         <div
           className={
             authenticated
-              ? "firebase-status connected"
-              : "firebase-status disconnected"
+              ? "control-connection connected"
+              : "control-connection disconnected"
           }
         >
-          <span className="status-dot"></span>
+          <span></span>
 
           {authenticated
-            ? "FIREBASE CONNECTED"
-            : "FIREBASE DISCONNECTED"}
+            ? "CONNECTED"
+            : "DISCONNECTED"}
         </div>
 
       </div>
 
       {/* ====================================================
-          AUTOMATIC CONTROL
+          AUTOMATIC
       ==================================================== */}
 
-      <div className="control-section">
+      <div className="control-group">
 
-        <h3>Automatic Drying</h3>
+        <div className="control-group-title">
+          Automatic Drying
+        </div>
 
-        <p className="section-description">
-          Control the complete drying cycle.
-        </p>
+        <div className="control-group-description">
+          Start and manage the complete
+          multi-stage drying cycle.
+        </div>
 
-        <div className="control-buttons">
+        <div className="command-grid">
 
           <CommandButton
-            label="START"
+            label="▶ START"
             command="START"
           />
 
           <CommandButton
-            label="PAUSE"
+            label="Ⅱ PAUSE"
             command="PAUSE"
           />
 
           <CommandButton
-            label="RESUME"
+            label="▶ RESUME"
             command="RESUME"
           />
 
           <CommandButton
-            label="STOP"
+            label="■ STOP"
             command="STOP"
             danger
           />
@@ -335,18 +335,21 @@ function ControlPanel() {
       </div>
 
       {/* ====================================================
-          MANUAL FAN CONTROL
+          MANUAL
       ==================================================== */}
 
-      <div className="control-section">
+      <div className="control-group">
 
-        <h3>Manual Fan Control</h3>
+        <div className="control-group-title">
+          Manual Fan Control
+        </div>
 
-        <p className="section-description">
-          Select the fan operating level.
-        </p>
+        <div className="control-group-description">
+          Directly select the fan operating
+          level.
+        </div>
 
-        <div className="control-buttons">
+        <div className="command-grid">
 
           <CommandButton
             label="HIGH"
@@ -374,30 +377,34 @@ function ControlPanel() {
       </div>
 
       {/* ====================================================
-          COMMAND STATUS
+          COMMAND INFORMATION
       ==================================================== */}
 
-      <div className="command-status">
+      <div className="command-info">
 
-        <div>
-          <span>Last sent:</span>
+        <div className="command-info-row">
+          <span>
+            Last command
+          </span>
 
           <strong>
             {lastSent}
           </strong>
         </div>
 
-        <div>
-          <span>Firebase command:</span>
+        <div className="command-info-row">
+          <span>
+            Firebase command
+          </span>
 
           <strong>
             {currentCommand}
           </strong>
         </div>
 
-        <p>
+        <div className="command-message">
           {message}
-        </p>
+        </div>
 
       </div>
 
