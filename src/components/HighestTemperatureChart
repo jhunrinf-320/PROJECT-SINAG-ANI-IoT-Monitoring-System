@@ -1,40 +1,28 @@
 import React from "react";
 
-const HighestTemperatureChart = ({ history }) => {
-  const records = Object.entries(history || {})
-    .map(([key, value]) => {
-      if (!value || typeof value !== "object") {
-        return null;
+function HighestTemperatureChart({ history }) {
+  const records = Object.entries(history || {}).filter(
+    ([, value]) => value && typeof value === "object"
+  );
+
+  let highestTemperature = null;
+
+  records.forEach(([, value]) => {
+    const temp1 = Number(value.temp1);
+    const temp2 = Number(value.temp2);
+
+    if (Number.isFinite(temp1)) {
+      if (highestTemperature === null || temp1 > highestTemperature) {
+        highestTemperature = temp1;
       }
+    }
 
-      const temp1 = Number(value.temp1);
-      const temp2 = Number(value.temp2);
-
-      const validTemp1 = Number.isFinite(temp1);
-      const validTemp2 = Number.isFinite(temp2);
-
-      if (!validTemp1 && !validTemp2) {
-        return null;
+    if (Number.isFinite(temp2)) {
+      if (highestTemperature === null || temp2 > highestTemperature) {
+        highestTemperature = temp2;
       }
-
-      const highest = Math.max(
-        validTemp1 ? temp1 : -Infinity,
-        validTemp2 ? temp2 : -Infinity
-      );
-
-      return {
-        id: key,
-        highest: highest,
-        temp1: validTemp1 ? temp1 : null,
-        temp2: validTemp2 ? temp2 : null,
-      };
-    })
-    .filter(Boolean);
-
-  const highestTemperature =
-    records.length > 0
-      ? Math.max(...records.map((item) => item.highest))
-      : null;
+    }
+  });
 
   return (
     <div
@@ -49,20 +37,16 @@ const HighestTemperatureChart = ({ history }) => {
     >
       <div
         style={{
-          color: "#6b7280",
           fontSize: "11px",
           fontWeight: "700",
+          color: "#6b7280",
           letterSpacing: "1px",
         }}
       >
         TEMPERATURE MONITORING
       </div>
 
-      <h2
-        style={{
-          margin: "5px 0",
-        }}
-      >
+      <h2 style={{ margin: "6px 0" }}>
         Highest Temperature Recorded
       </h2>
 
@@ -70,124 +54,95 @@ const HighestTemperatureChart = ({ history }) => {
         style={{
           color: "#6b7280",
           fontSize: "13px",
-          marginBottom: "20px",
         }}
       >
-        Highest temperature between Temperature Sensor 1
-        and Temperature Sensor 2.
+        Highest temperature recorded by Temperature
+        Sensor 1 and Temperature Sensor 2.
       </p>
 
-      {highestTemperature === null ? (
+      <div
+        style={{
+          background: "#f8fafc",
+          borderRadius: "10px",
+          padding: "20px",
+          marginTop: "20px",
+        }}
+      >
         <div
           style={{
-            background: "#f8fafc",
-            padding: "20px",
-            borderRadius: "10px",
+            fontSize: "11px",
+            fontWeight: "700",
             color: "#6b7280",
           }}
         >
-          No temperature history available yet.
+          HIGHEST RECORDED TEMPERATURE
         </div>
-      ) : (
-        <>
-          <div
-            style={{
-              background: "#f8fafc",
-              padding: "16px",
-              borderRadius: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "11px",
-                fontWeight: "700",
-              }}
-            >
-              HIGHEST RECORDED TEMPERATURE
-            </div>
 
-            <div
-              style={{
-                fontSize: "30px",
-                fontWeight: "800",
-                marginTop: "5px",
-              }}
-            >
-              {highestTemperature.toFixed(2)} °C
-            </div>
-          </div>
+        <div
+          style={{
+            fontSize: "32px",
+            fontWeight: "800",
+            marginTop: "5px",
+          }}
+        >
+          {highestTemperature === null
+            ? "No data"
+            : `${highestTemperature.toFixed(2)} °C`}
+        </div>
+      </div>
 
-          <div
-            style={{
-              overflowX: "auto",
-              background: "#f8fafc",
-              borderRadius: "10px",
-              padding: "20px",
-            }}
-          >
-            {records.map((item) => (
+      <div style={{ marginTop: "20px" }}>
+        {records.length === 0 ? (
+          <p style={{ color: "#6b7280" }}>
+            No temperature history available yet.
+          </p>
+        ) : (
+          records.map(([id, value]) => {
+            const temp1 = Number(value.temp1);
+            const temp2 = Number(value.temp2);
+
+            const valid1 = Number.isFinite(temp1);
+            const valid2 = Number.isFinite(temp2);
+
+            if (!valid1 && !valid2) {
+              return null;
+            }
+
+            const highest = Math.max(
+              valid1 ? temp1 : -Infinity,
+              valid2 ? temp2 : -Infinity
+            );
+
+            return (
               <div
-                key={item.id}
+                key={id}
                 style={{
                   display: "flex",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  gap: "15px",
-                  marginBottom: "12px",
+                  padding: "12px 0",
+                  borderBottom: "1px solid #e5e7eb",
                 }}
               >
-                <div
+                <span
                   style={{
-                    width: "90px",
                     fontSize: "12px",
                     color: "#6b7280",
                   }}
                 >
-                  {String(item.id).slice(-8)}
-                </div>
+                  {String(id).slice(-12)}
+                </span>
 
-                <div
-                  style={{
-                    flex: 1,
-                    height: "24px",
-                    background: "#e5e7eb",
-                    borderRadius: "6px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${Math.min(
-                        Math.max(
-                          (item.highest / highestTemperature) * 100,
-                          0
-                        ),
-                        100
-                      )}%`,
-                      height: "100%",
-                      background: "#f59e0b",
-                      borderRadius: "6px",
-                    }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    width: "70px",
-                    fontWeight: "700",
-                    fontSize: "13px",
-                  }}
-                >
-                  {item.highest.toFixed(2)} °C
-                </div>
+                <strong>
+                  {highest.toFixed(2)} °C
+                </strong>
               </div>
-            ))}
-          </div>
-        </>
-      )}
+            );
+          })
+        )}
+      </div>
     </div>
   );
-};
+}
 
 export default HighestTemperatureChart;
