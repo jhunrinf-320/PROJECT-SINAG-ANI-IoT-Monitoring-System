@@ -1,0 +1,96 @@
+import React from "react";
+
+export default function HighestTemperatureChart({ history = {} }) {
+  const data = Object.entries(history)
+    .map(([timestamp, item]) => {
+      const t1 = Number(item?.temp1);
+      const t2 = Number(item?.temp2);
+
+      const validT1 = Number.isFinite(t1);
+      const validT2 = Number.isFinite(t2);
+
+      if (!validT1 && !validT2) return null;
+
+      return {
+        timestamp,
+        highest: Math.max(
+          validT1 ? t1 : -Infinity,
+          validT2 ? t2 : -Infinity
+        ),
+      };
+    })
+    .filter(Boolean);
+
+  const highest =
+    data.length > 0
+      ? Math.max(...data.map((item) => item.highest))
+      : null;
+
+  return (
+    <div className="highest-temperature-card">
+      <div className="highest-temperature-header">
+        <div>
+          <small>TEMPERATURE MONITORING</small>
+          <h2>Highest Temperature Recorded</h2>
+          <p>
+            Highest temperature recorded from
+            Temperature Sensor 1 and Sensor 2.
+          </p>
+        </div>
+
+        {highest !== null && (
+          <div className="highest-temperature-value">
+            <span>Highest</span>
+            <strong>{highest.toFixed(2)}°C</strong>
+          </div>
+        )}
+      </div>
+
+      {data.length === 0 ? (
+        <div className="temperature-empty">
+          No temperature history available yet.
+        </div>
+      ) : (
+        <div className="temperature-chart-wrapper">
+          <div className="temperature-chart">
+            {data.map((item, index) => {
+              const maxHeight = 180;
+              const chartMaximum = Math.max(highest, 40);
+
+              const barHeight =
+                (item.highest / chartMaximum) * maxHeight;
+
+              return (
+                <div
+                  className="temperature-bar-container"
+                  key={`${item.timestamp}-${index}`}
+                  title={`${item.timestamp}: ${item.highest.toFixed(
+                    2
+                  )}°C`}
+                >
+                  <span className="temperature-value">
+                    {item.highest.toFixed(1)}°
+                  </span>
+
+                  <div
+                    className="temperature-bar"
+                    style={{
+                      height: `${Math.max(
+                        barHeight,
+                        4
+                      )}px`,
+                    }}
+                  />
+
+                  <span className="temperature-time">
+                    {String(item.timestamp).slice(-6)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
