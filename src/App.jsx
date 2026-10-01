@@ -794,10 +794,11 @@ function App() {
           unit=""
         />
       </div>
-
-      <ControlPanel />
-    </>
-  );
+      
+        <ControlPanel /
+         <HighestTemperatureChart
+         history={deviceData?.history || {}}
+/>
 
 
   // ===================================================
