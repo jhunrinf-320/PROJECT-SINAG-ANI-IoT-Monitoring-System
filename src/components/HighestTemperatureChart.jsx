@@ -5,24 +5,35 @@ function HighestTemperatureChart({ history }) {
     ([, value]) => value && typeof value === "object"
   );
 
-  let highestTemperature = null;
+  let highestTemp1 = null;
+  let highestTemp2 = null;
 
   records.forEach(([, value]) => {
     const temp1 = Number(value.temp1);
     const temp2 = Number(value.temp2);
 
     if (Number.isFinite(temp1)) {
-      if (highestTemperature === null || temp1 > highestTemperature) {
-        highestTemperature = temp1;
+      if (highestTemp1 === null || temp1 > highestTemp1) {
+        highestTemp1 = temp1;
       }
     }
 
     if (Number.isFinite(temp2)) {
-      if (highestTemperature === null || temp2 > highestTemperature) {
-        highestTemperature = temp2;
+      if (highestTemp2 === null || temp2 > highestTemp2) {
+        highestTemp2 = temp2;
       }
     }
   });
+
+  let overallHighest = null;
+
+  if (highestTemp1 !== null && highestTemp2 !== null) {
+    overallHighest = Math.max(highestTemp1, highestTemp2);
+  } else if (highestTemp1 !== null) {
+    overallHighest = highestTemp1;
+  } else if (highestTemp2 !== null) {
+    overallHighest = highestTemp2;
+  }
 
   return (
     <div
@@ -54,44 +65,122 @@ function HighestTemperatureChart({ history }) {
         style={{
           color: "#6b7280",
           fontSize: "13px",
+          marginBottom: "20px",
         }}
       >
-        Highest temperature recorded by Temperature
+        Highest temperatures recorded by Temperature
         Sensor 1 and Temperature Sensor 2.
       </p>
 
+      {/* TEMPERATURE CARDS */}
       <div
         style={{
-          background: "#f8fafc",
-          borderRadius: "10px",
-          padding: "20px",
-          marginTop: "20px",
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: "12px",
+          marginBottom: "20px",
         }}
       >
+        {/* TEMP 1 */}
         <div
           style={{
-            fontSize: "11px",
-            fontWeight: "700",
-            color: "#6b7280",
+            background: "#f8fafc",
+            borderRadius: "10px",
+            padding: "18px",
           }}
         >
-          HIGHEST RECORDED TEMPERATURE
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              color: "#6b7280",
+            }}
+          >
+            TEMP 1 HIGHEST
+          </div>
+
+          <div
+            style={{
+              fontSize: "26px",
+              fontWeight: "800",
+              marginTop: "6px",
+            }}
+          >
+            {highestTemp1 === null
+              ? "No data"
+              : `${highestTemp1.toFixed(2)} °C`}
+          </div>
         </div>
 
+        {/* TEMP 2 */}
         <div
           style={{
-            fontSize: "32px",
-            fontWeight: "800",
-            marginTop: "5px",
+            background: "#f8fafc",
+            borderRadius: "10px",
+            padding: "18px",
           }}
         >
-          {highestTemperature === null
-            ? "No data"
-            : `${highestTemperature.toFixed(2)} °C`}
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              color: "#6b7280",
+            }}
+          >
+            TEMP 2 HIGHEST
+          </div>
+
+          <div
+            style={{
+              fontSize: "26px",
+              fontWeight: "800",
+              marginTop: "6px",
+            }}
+          >
+            {highestTemp2 === null
+              ? "No data"
+              : `${highestTemp2.toFixed(2)} °C`}
+          </div>
+        </div>
+
+        {/* OVERALL */}
+        <div
+          style={{
+            background: "#f8fafc",
+            borderRadius: "10px",
+            padding: "18px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              color: "#6b7280",
+            }}
+          >
+            OVERALL HIGHEST
+          </div>
+
+          <div
+            style={{
+              fontSize: "26px",
+              fontWeight: "800",
+              marginTop: "6px",
+            }}
+          >
+            {overallHighest === null
+              ? "No data"
+              : `${overallHighest.toFixed(2)} °C`}
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: "20px" }}>
+      {/* RECORDS */}
+      <div
+        style={{
+          marginTop: "20px",
+        }}
+      >
         {records.length === 0 ? (
           <p style={{ color: "#6b7280" }}>
             No temperature history available yet.
@@ -101,41 +190,49 @@ function HighestTemperatureChart({ history }) {
             const temp1 = Number(value.temp1);
             const temp2 = Number(value.temp2);
 
-            const valid1 = Number.isFinite(temp1);
-            const valid2 = Number.isFinite(temp2);
+            const validTemp1 = Number.isFinite(temp1);
+            const validTemp2 = Number.isFinite(temp2);
 
-            if (!valid1 && !valid2) {
+            if (!validTemp1 && !validTemp2) {
               return null;
             }
-
-            const highest = Math.max(
-              valid1 ? temp1 : -Infinity,
-              valid2 ? temp2 : -Infinity
-            );
 
             return (
               <div
                 key={id}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
+                  display: "grid",
+                  gridTemplateColumns:
+                    "1fr 1fr 1fr",
+                  gap: "10px",
                   alignItems: "center",
                   padding: "12px 0",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom:
+                    "1px solid #e5e7eb",
+                  fontSize: "13px",
                 }}
               >
                 <span
                   style={{
-                    fontSize: "12px",
                     color: "#6b7280",
                   }}
                 >
                   {String(id).slice(-12)}
                 </span>
 
-                <strong>
-                  {highest.toFixed(2)} °C
-                </strong>
+                <span>
+                  Temp 1:{" "}
+                  {validTemp1
+                    ? `${temp1.toFixed(2)} °C`
+                    : "N/A"}
+                </span>
+
+                <span>
+                  Temp 2:{" "}
+                  {validTemp2
+                    ? `${temp2.toFixed(2)} °C`
+                    : "N/A"}
+                </span>
               </div>
             );
           })
