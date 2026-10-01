@@ -795,11 +795,9 @@ function App() {
         />
       </div>
       
-        <ControlPanel /
-         <HighestTemperatureChart
-         history={deviceData?.history || {}}
-/>
-
+        <ControlPanel />
+         <HighestTemperatureChart history={deviceData?.history || 
+  {}} />
 
   // ===================================================
   // CONTROL PAGE
