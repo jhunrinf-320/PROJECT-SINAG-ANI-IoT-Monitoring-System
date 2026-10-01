@@ -749,7 +749,6 @@ function App() {
   // ===================================================
 
   const Dashboard = () => (
-  const Dashboard = () => (
   <>
     <PageHeader
       title="Dashboard"
