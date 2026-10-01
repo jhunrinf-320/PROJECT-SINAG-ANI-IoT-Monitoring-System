@@ -749,55 +749,55 @@ function App() {
   // ===================================================
 
   const Dashboard = () => (
-    <>
-      <PageHeader
-        title="Dashboard"
-        subtitle="SINAG-ANI IoT Solar Food Drying System"
+  const Dashboard = () => (
+  <>
+    <PageHeader
+      title="Dashboard"
+      subtitle="SINAG-ANI IoT Solar Food Drying System"
+    />
+
+    <DryingStatus />
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gap: "15px",
+        marginBottom: "24px",
+      }}
+    >
+      <SensorCard
+        title="Temperature Sensor 1"
+        value={temperature1}
+        unit="°C"
       />
 
-      <DryingStatus />
+      <SensorCard
+        title="Temperature Sensor 2"
+        value={temperature2}
+        unit="°C"
+      />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(4, minmax(0, 1fr))",
-          gap: "15px",
-          marginBottom: "24px",
-        }}
-      >
-        <SensorCard
-          title="Temperature Sensor 1"
-          value={temperature1}
-          unit="°C"
-        />
+      <SensorCard
+        title="Humidity"
+        value={humidity}
+        unit="%"
+      />
 
-        <SensorCard
-          title="Temperature Sensor 2"
-          value={temperature2}
-          unit="°C"
-        />
+      <SensorCard
+        title="Device Status"
+        value={deviceOnline ? "ONLINE" : "OFFLINE"}
+        unit=""
+      />
+    </div>
 
-        <SensorCard
-          title="Humidity"
-          value={humidity}
-          unit="%"
-        />
+    <ControlPanel />
 
-        <SensorCard
-          title="Device Status"
-          value={
-            deviceOnline
-              ? "ONLINE"
-              : "OFFLINE"
-          }
-          unit=""
-        />
-      </div>
-      
-        <ControlPanel />
-         <HighestTemperatureChart history={deviceData?.history || 
-  {}} />
+    <HighestTemperatureChart
+      history={deviceData?.history || {}}
+    />
+  </>
+);
 
   // ===================================================
   // CONTROL PAGE
