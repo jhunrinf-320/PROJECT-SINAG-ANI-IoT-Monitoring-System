@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+import HighestTemperatureChart from "./components/HighestTemperatureChart";
+
 import { initializeApp } from "firebase/app";
 
 import {
