@@ -1059,4 +1059,461 @@ function App() {
             padding: "11px",
             borderRadius: "8px",
             background: "#f1f5f9"
+                          color: "#475569",
+            fontSize: "13px",
+          }}
+        >
+          {commandMessage}
+        </div>
+      )}
 
+    </section>
+  );
+
+
+  // ===================================================
+  // DASHBOARD
+  // ===================================================
+
+  const Dashboard = () => (
+    <>
+      <PageHeader
+        title="Dashboard"
+        subtitle="SINAG-ANI IoT Solar Food Drying System"
+      />
+
+      <DryingStatus />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(4, minmax(0, 1fr))",
+          gap: "15px",
+          marginBottom: "24px",
+        }}
+      >
+
+        <SensorCard
+          title="Temperature Sensor 1"
+          value={temperature1}
+          unit="°C"
+        />
+
+        <SensorCard
+          title="Temperature Sensor 2"
+          value={temperature2}
+          unit="°C"
+        />
+
+        <SensorCard
+          title="Humidity"
+          value={humidity}
+          unit="%"
+        />
+
+        <SensorCard
+          title="Device Status"
+          value={
+            deviceOnline
+              ? "ONLINE"
+              : "OFFLINE"
+          }
+          unit=""
+        />
+
+      </div>
+
+      <ControlPanel />
+
+      <HighestTemperatureChart
+        history={deviceData?.history || {}}
+      />
+
+    </>
+  );
+
+
+  // ===================================================
+  // CONTROL PAGE
+  // ===================================================
+
+  const ControlPage = () => (
+    <>
+      <PageHeader
+        title="Control"
+        subtitle="Control the SINAG-ANI drying operation"
+      />
+
+      <ControlPanel />
+    </>
+  );
+
+
+  // ===================================================
+  // MONITORING PAGE
+  // ===================================================
+
+  const Monitoring = () => (
+    <>
+      <PageHeader
+        title="Monitoring"
+        subtitle="Real-time sensor monitoring"
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(4, minmax(0, 1fr))",
+          gap: "15px",
+          marginBottom: "24px",
+        }}
+      >
+
+        <SensorCard
+          title="Temperature Sensor 1"
+          value={temperature1}
+          unit="°C"
+        />
+
+        <SensorCard
+          title="Temperature Sensor 2"
+          value={temperature2}
+          unit="°C"
+        />
+
+        <SensorCard
+          title="Humidity"
+          value={humidity}
+          unit="%"
+        />
+
+        <SensorCard
+          title="Device Status"
+          value={
+            deviceOnline
+              ? "ONLINE"
+              : "OFFLINE"
+          }
+          unit=""
+        />
+
+      </div>
+
+      <DryingStatus />
+
+    </>
+  );
+
+
+  // ===================================================
+  // SETTINGS
+  // ===================================================
+
+  const Settings = () => (
+    <>
+      <PageHeader
+        title="Settings"
+        subtitle="SINAG-ANI device information"
+      />
+
+      <section
+        style={{
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "14px",
+          padding: "24px",
+          maxWidth: "700px",
+        }}
+      >
+
+        <Setting
+          title="Device ID"
+          value="device001"
+        />
+
+        <Setting
+          title="Firebase"
+          value={
+            firebaseConnected
+              ? "Connected"
+              : "Disconnected"
+          }
+        />
+
+        <Setting
+          title="Device"
+          value={
+            deviceOnline
+              ? "Online"
+              : "Offline"
+          }
+        />
+
+        <Setting
+          title="Database"
+          value="Realtime Database"
+        />
+
+      </section>
+
+    </>
+  );
+
+
+  // ===================================================
+  // SETTING
+  // ===================================================
+
+  const Setting = ({
+    title,
+    value,
+  }) => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        padding: "16px 0",
+        borderBottom:
+          "1px solid #e5e7eb",
+      }}
+    >
+
+      <span
+        style={{
+          color: "#6b7280",
+        }}
+      >
+        {title}
+      </span>
+
+      <strong>{value}</strong>
+
+    </div>
+  );
+
+
+  // ===================================================
+  // PAGE ROUTER
+  // ===================================================
+
+  const renderPage = () => {
+
+    switch (activePage) {
+
+      case "Control":
+        return <ControlPage />;
+
+      case "Monitoring":
+        return <Monitoring />;
+
+      case "Settings":
+        return <Settings />;
+
+      case "Dashboard":
+      default:
+        return <Dashboard />;
+
+    }
+  };
+
+
+  // ===================================================
+  // WEBSITE
+  // ===================================================
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f4f6f8",
+        color: "#17202a",
+        fontFamily:
+          "Arial, Helvetica, sans-serif",
+      }}
+    >
+
+      {/* =============================================
+          SIDEBAR
+      ============================================= */}
+
+      <aside
+        style={{
+          width: "240px",
+          minHeight: "100vh",
+          background: "#111827",
+          color: "#ffffff",
+          padding: "20px",
+          position: "fixed",
+          left: 0,
+          top: 0,
+          bottom: 0,
+        }}
+      >
+
+        <div
+          style={{
+            marginBottom: "35px",
+          }}
+        >
+
+          <h2
+            style={{
+              margin: 0,
+              fontSize: "20px",
+            }}
+          >
+            SINAG-ANI
+          </h2>
+
+          <span
+            style={{
+              color: "#9ca3af",
+              fontSize: "12px",
+            }}
+          >
+            IoT Solar Dryer
+          </span>
+
+        </div>
+
+        <nav
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+
+          {[
+            "Dashboard",
+            "Control",
+            "Monitoring",
+            "Settings",
+          ].map((page) => (
+
+            <button
+              key={page}
+              onClick={() =>
+                setActivePage(page)
+              }
+              style={{
+                border: "0",
+                borderRadius: "9px",
+                padding: "13px",
+                textAlign: "left",
+                cursor: "pointer",
+
+                background:
+                  activePage === page
+                    ? "#ffffff"
+                    : "transparent",
+
+                color:
+                  activePage === page
+                    ? "#111827"
+                    : "#9ca3af",
+
+                fontWeight:
+                  activePage === page
+                    ? "700"
+                    : "500",
+              }}
+            >
+              {page}
+            </button>
+
+          ))}
+
+        </nav>
+
+        <div
+          style={{
+            position: "absolute",
+            bottom: "25px",
+            left: "20px",
+            color: "#9ca3af",
+            fontSize: "12px",
+          }}
+        >
+
+          <span
+            style={{
+              display: "inline-block",
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              marginRight: "7px",
+              background:
+                deviceOnline
+                  ? "#22c55e"
+                  : "#9ca3af",
+            }}
+          />
+
+          {deviceOnline
+            ? "Device Online"
+            : "Device Offline"}
+
+        </div>
+
+      </aside>
+
+
+      {/* =============================================
+          MAIN CONTENT
+      ============================================= */}
+
+      <main
+        style={{
+          marginLeft: "240px",
+          minHeight: "100vh",
+        }}
+      >
+
+        <header
+          style={{
+            height: "65px",
+            background: "#ffffff",
+            borderBottom:
+              "1px solid #e5e7eb",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 25px",
+          }}
+        >
+
+          <strong>
+            {activePage}
+          </strong>
+
+          <div
+            style={{
+              marginLeft: "auto",
+              fontSize: "13px",
+              color: "#6b7280",
+            }}
+          >
+            device001
+          </div>
+
+        </header>
+
+        <main
+          style={{
+            padding: "30px",
+            maxWidth: "1500px",
+            margin: "0 auto",
+          }}
+        >
+          {renderPage()}
+        </main>
+
+      </main>
+
+    </div>
+  );
+}
+
+export default App;
