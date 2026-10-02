@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 
 import HighestTemperatureChart from "./components/HighestTemperatureChart";
 
@@ -42,6 +42,20 @@ const DEVICE_PATH = "devices/device001";
 
 
 // =====================================================
+// TIMER SETTINGS
+// =====================================================
+
+const INITIAL_TIME = 60 * 60;        // 1 hour
+const MAIN_TIME = 2 * 60 * 60;       // 2 hours
+const FINAL_TIME = 2 * 60 * 60;      // 2 hours
+
+const TOTAL_TIME =
+  INITIAL_TIME +
+  MAIN_TIME +
+  FINAL_TIME;
+
+
+// =====================================================
 // APP
 // =====================================================
 
@@ -64,55 +78,14 @@ function App() {
   // TIMER STATE
   // ===================================================
 
-  /*
-    SINAG-ANI DRYING TIME
-
-    INITIAL = 1 hour
-    MAIN    = 2 hours
-    FINAL   = 2 hours
-
-    TOTAL   = 5 hours
-  */
-
-  const INITIAL_TIME = 60 * 60;
-  const MAIN_TIME = 2 * 60 * 60;
-  const FINAL_TIME = 2 * 60 * 60;
-
-  const TOTAL_TIME =
-    INITIAL_TIME +
-    MAIN_TIME +
-    FINAL_TIME;
-
-
-  const [localStageRemaining, setLocalStageRemaining] =
-    useState(0);
-
-  const [localTotalRemaining, setLocalTotalRemaining] =
-    useState(0);
-
-  const [localTotalElapsed, setLocalTotalElapsed] =
-    useState(0);
-
   const [timerRunning, setTimerRunning] =
     useState(false);
 
   const [timerInitialized, setTimerInitialized] =
     useState(false);
 
-
-  /*
-    These refs store the actual timestamp.
-
-    Using Date.now() instead of simply subtracting
-    1 every second prevents the timer from getting
-    badly affected by browser delays.
-  */
-
-  const timerEndTimeRef = useRef(null);
-
-  const stageEndTimeRef = useRef(null);
-
-  const lastTickRef = useRef(null);
+  const [localTimerElapsed, setLocalTimerElapsed] =
+    useState(0);
 
 
   // ===================================================
@@ -185,6 +158,50 @@ function App() {
 
 
   // ===================================================
+  // TIMER COUNTDOWN
+  // ===================================================
+
+  useEffect(() => {
+    if (!timerRunning) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setLocalTimerElapsed((previous) => {
+        const nextValue = previous + 1;
+
+        return Math.min(
+          nextValue,
+          TOTAL_TIME
+        );
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [timerRunning]);
+
+
+  // ===================================================
+  // TIMER AUTO STOP
+  // ===================================================
+
+  useEffect(() => {
+    if (
+      timerRunning &&
+      localTimerElapsed >= TOTAL_TIME
+    ) {
+      setLocalTimerElapsed(TOTAL_TIME);
+      setTimerRunning(false);
+    }
+  }, [
+    timerRunning,
+    localTimerElapsed,
+  ]);
+
+
+  // ===================================================
   // SENSOR / DEVICE DATA
   // ===================================================
 
@@ -210,15 +227,8 @@ function App() {
 
 
   // ===================================================
-  // TIMER DISPLAY VALUES
+  // FIREBASE TIMER VALUES
   // ===================================================
-
-  /*
-    Before the website timer starts, use Firebase's
-    existing values.
-
-    Once AUTO is pressed, use the local timer.
-  */
 
   const firebaseStageRemaining =
     sensors?.stageRemainingSeconds ??
@@ -236,21 +246,72 @@ function App() {
     0;
 
 
+  // ===================================================
+  // LOCAL TIMER VALUES
+  // ===================================================
+
+  let localStageRemaining = 0;
+
+  let localTotalRemaining =
+    Math.max(
+      0,
+      TOTAL_TIME - localTimerElapsed
+    );
+
+
+  // ===================================================
+  // DETERMINE CURRENT STAGE TIMER
+  // ===================================================
+
+  if (
+    localTimerElapsed < INITIAL_TIME
+  ) {
+    localStageRemaining =
+      INITIAL_TIME -
+      localTimerElapsed;
+
+  } else if (
+    localTimerElapsed <
+    INITIAL_TIME + MAIN_TIME
+  ) {
+
+    localStageRemaining =
+      INITIAL_TIME +
+      MAIN_TIME -
+      localTimerElapsed;
+
+  } else if (
+    localTimerElapsed <
+    TOTAL_TIME
+  ) {
+
+    localStageRemaining =
+      TOTAL_TIME -
+      localTimerElapsed;
+
+  } else {
+
+    localStageRemaining = 0;
+  }
+
+
+  // ===================================================
+  // DISPLAY TIMER VALUES
+  // ===================================================
+
   const stageRemaining =
     timerInitialized
       ? localStageRemaining
       : firebaseStageRemaining;
-
 
   const totalRemaining =
     timerInitialized
       ? localTotalRemaining
       : firebaseTotalRemaining;
 
-
   const totalElapsed =
     timerInitialized
-      ? localTotalElapsed
+      ? localTimerElapsed
       : firebaseTotalElapsed;
 
 
@@ -262,4 +323,740 @@ function App() {
 
   const coolFan =
     sensors?.coolFan === true ||
-   
+    control?.coolFan === true;
+
+
+  // ===================================================
+  // FORMAT TIME
+  // ===================================================
+
+  const formatTime = (seconds) => {
+    const value = Math.max(
+      0,
+      Math.floor(
+        Number(seconds) || 0
+      )
+    );
+
+    const hours = Math.floor(
+      value / 3600
+    );
+
+    const minutes = Math.floor(
+      (value % 3600) / 60
+    );
+
+    const secs = value % 60;
+
+    return (
+      String(hours).padStart(2, "0") +
+      ":" +
+      String(minutes).padStart(2, "0") +
+      ":" +
+      String(secs).padStart(2, "0")
+    );
+  };
+
+
+  // ===================================================
+  // TIMER COMMAND HANDLER
+  // ===================================================
+
+  const handleTimerCommand = (
+    command
+  ) => {
+
+    // ================================================
+    // AUTOMATIC
+    // ================================================
+
+    if (
+      command === "AUTO"
+    ) {
+
+      /*
+        Start a new 5-hour drying cycle
+        if no timer currently exists.
+      */
+
+      if (
+        !timerInitialized ||
+        localTimerElapsed >= TOTAL_TIME
+      ) {
+
+        setLocalTimerElapsed(0);
+
+        setTimerInitialized(true);
+      }
+
+      /*
+        Start / continue the timer.
+      */
+
+      setTimerRunning(true);
+
+      return;
+    }
+
+
+    // ================================================
+    // PAUSE
+    // ================================================
+
+    if (
+      command === "PAUSE"
+    ) {
+
+      setTimerRunning(false);
+
+      return;
+    }
+
+
+    // ================================================
+    // RESUME
+    // ================================================
+
+    if (
+      command === "RESUME"
+    ) {
+
+      if (
+        timerInitialized &&
+        localTimerElapsed < TOTAL_TIME
+      ) {
+
+        setTimerRunning(true);
+      }
+
+      return;
+    }
+
+
+    // ================================================
+    // STOP
+    // ================================================
+
+    if (
+      command === "OFF"
+    ) {
+
+      setTimerRunning(false);
+
+      setTimerInitialized(false);
+
+      setLocalTimerElapsed(0);
+
+      return;
+    }
+  };
+
+
+  // ===================================================
+  // FIREBASE COMMAND
+  // ===================================================
+
+  const sendCommand = async (
+    command
+  ) => {
+
+    try {
+
+      setSendingCommand(true);
+
+      setCommandMessage(
+        `Sending ${command}...`
+      );
+
+
+      const commandRef = ref(
+        database,
+        `${DEVICE_PATH}/control/mode`
+      );
+
+
+      await set(
+        commandRef,
+        command
+      );
+
+
+      // ==============================================
+      // TIMER CONTROL
+      // ==============================================
+
+      handleTimerCommand(
+        command
+      );
+
+
+      setCommandMessage(
+        `Command "${command}" sent successfully.`
+      );
+
+
+      setTimeout(() => {
+        setCommandMessage("");
+      }, 3000);
+
+
+    } catch (error) {
+
+      console.error(
+        "Command error:",
+        error
+      );
+
+
+      setCommandMessage(
+        "Failed to send command."
+      );
+
+
+    } finally {
+
+      setSendingCommand(false);
+
+    }
+  };
+
+
+  // ===================================================
+  // PAGE HEADER
+  // ===================================================
+
+  const PageHeader = ({
+    title,
+    subtitle,
+  }) => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "25px",
+      }}
+    >
+
+      <div>
+
+        <div
+          style={{
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "1px",
+            color: "#6b7280",
+          }}
+        >
+          SINAG-ANI
+        </div>
+
+
+        <h1
+          style={{
+            margin: "5px 0",
+            fontSize: "30px",
+          }}
+        >
+          {title}
+        </h1>
+
+
+        <p
+          style={{
+            margin: 0,
+            color: "#6b7280",
+          }}
+        >
+          {subtitle}
+        </p>
+
+      </div>
+
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "13px",
+          color: "#6b7280",
+        }}
+      >
+
+        <span
+          style={{
+            width: "9px",
+            height: "9px",
+            borderRadius: "50%",
+            background:
+              firebaseConnected
+                ? "#22c55e"
+                : "#9ca3af",
+          }}
+        />
+
+
+        {firebaseConnected
+          ? "Firebase Connected"
+          : "Firebase Connecting..."}
+
+      </div>
+
+    </div>
+  );
+
+
+  // ===================================================
+  // SENSOR CARD
+  // ===================================================
+
+  const SensorCard = ({
+    title,
+    value,
+    unit,
+  }) => (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "20px",
+      }}
+    >
+
+      <div
+        style={{
+          color: "#6b7280",
+          fontSize: "13px",
+          marginBottom: "10px",
+        }}
+      >
+        {title}
+      </div>
+
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: "5px",
+        }}
+      >
+
+        <strong
+          style={{
+            fontSize: "28px",
+          }}
+        >
+          {value}
+        </strong>
+
+
+        <span
+          style={{
+            color: "#6b7280",
+          }}
+        >
+          {unit}
+        </span>
+
+      </div>
+
+    </div>
+  );
+
+
+  // ===================================================
+  // STATUS ITEM
+  // ===================================================
+
+  const StatusItem = ({
+    title,
+    value,
+  }) => (
+    <div
+      style={{
+        background: "#f8fafc",
+        borderRadius: "10px",
+        padding: "14px",
+      }}
+    >
+
+      <div
+        style={{
+          color: "#6b7280",
+          fontSize: "11px",
+          marginBottom: "6px",
+        }}
+      >
+        {title}
+      </div>
+
+
+      <strong>{value}</strong>
+
+    </div>
+  );
+
+
+  // ===================================================
+  // DRYING STATUS
+  // ===================================================
+
+  const DryingStatus = () => (
+    <section
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "24px",
+        marginBottom: "24px",
+      }}
+    >
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
+      >
+
+        <div>
+
+          <div
+            style={{
+              color: "#6b7280",
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "1px",
+            }}
+          >
+            CURRENT SINAG-ANI OPERATION
+          </div>
+
+
+          <h2
+            style={{
+              margin: "5px 0 0",
+            }}
+          >
+            Drying Status
+          </h2>
+
+        </div>
+
+
+        <div
+          style={{
+            padding: "7px 12px",
+            borderRadius: "20px",
+            background:
+              deviceOnline
+                ? "#dcfce7"
+                : "#f3f4f6",
+            color:
+              deviceOnline
+                ? "#166534"
+                : "#6b7280",
+            fontSize: "11px",
+            fontWeight: "800",
+          }}
+        >
+          {deviceOnline
+            ? "● ONLINE"
+            : "● OFFLINE"}
+        </div>
+
+      </div>
+
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(4, minmax(0, 1fr))",
+          gap: "12px",
+        }}
+      >
+
+        <StatusItem
+          title="Mode"
+          value={mode}
+        />
+
+
+        <StatusItem
+          title="Stage"
+          value={stage}
+        />
+
+
+        <StatusItem
+          title="Stage Time Remaining"
+          value={formatTime(stageRemaining)}
+        />
+
+
+        <StatusItem
+          title="Total Time Remaining"
+          value={formatTime(totalRemaining)}
+        />
+
+
+        <StatusItem
+          title="Total Elapsed"
+          value={formatTime(totalElapsed)}
+        />
+
+
+        <StatusItem
+          title="Main Fan"
+          value={`${Number(mainFan) || 0}%`}
+        />
+
+
+        <StatusItem
+          title="Cool-Air Fan"
+          value={
+            coolFan
+              ? "ON"
+              : "OFF"
+          }
+        />
+
+
+        <StatusItem
+          title="Firebase"
+          value={
+            firebaseConnected
+              ? "CONNECTED"
+              : "DISCONNECTED"
+          }
+        />
+
+      </div>
+
+    </section>
+  );
+
+
+  // ===================================================
+  // CONTROL BUTTON
+  // ===================================================
+
+  const ControlButton = ({
+    children,
+    background,
+    command,
+  }) => (
+    <button
+      disabled={sendingCommand}
+      onClick={() =>
+        sendCommand(command)
+      }
+      style={{
+        border: "0",
+        borderRadius: "10px",
+        padding: "15px",
+        minHeight: "55px",
+        background,
+        color: "#ffffff",
+        fontWeight: "700",
+        cursor: sendingCommand
+          ? "not-allowed"
+          : "pointer",
+        opacity: sendingCommand
+          ? 0.6
+          : 1,
+      }}
+    >
+      {children}
+    </button>
+  );
+
+
+  // ===================================================
+  // CONTROL PANEL
+  // ===================================================
+
+  const ControlPanel = () => (
+    <section
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "24px",
+        marginBottom: "24px",
+      }}
+    >
+
+      <div
+        style={{
+          marginBottom: "22px",
+        }}
+      >
+
+        <div
+          style={{
+            color: "#6b7280",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "1px",
+          }}
+        >
+          SYSTEM CONTROL
+        </div>
+
+
+        <h2
+          style={{
+            margin: "5px 0 0",
+          }}
+        >
+          Drying Controls
+        </h2>
+
+      </div>
+
+
+      {/* =============================================
+          AUTOMATIC MODE
+      ============================================= */}
+
+      <div
+        style={{
+          marginBottom: "28px",
+        }}
+      >
+
+        <h3
+          style={{
+            fontSize: "15px",
+            marginBottom: "12px",
+          }}
+        >
+          Automatic Mode
+        </h3>
+
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(4, minmax(0, 1fr))",
+            gap: "10px",
+          }}
+        >
+
+          <ControlButton
+            command="AUTO"
+            background="#16a34a"
+          >
+            ▶ AUTOMATIC
+          </ControlButton>
+
+
+          <ControlButton
+            command="PAUSE"
+            background="#f59e0b"
+          >
+            ⏸ PAUSE
+          </ControlButton>
+
+
+          <ControlButton
+            command="RESUME"
+            background="#2563eb"
+          >
+            ▶ RESUME
+          </ControlButton>
+
+
+          <ControlButton
+            command="OFF"
+            background="#dc2626"
+          >
+            ■ STOP
+          </ControlButton>
+
+        </div>
+
+      </div>
+
+
+      {/* =============================================
+          MANUAL MODE
+      ============================================= */}
+
+      <div>
+
+        <h3
+          style={{
+            fontSize: "15px",
+            marginBottom: "12px",
+          }}
+        >
+          Manual Mode
+        </h3>
+
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(4, minmax(0, 1fr))",
+            gap: "10px",
+          }}
+        >
+
+          <ControlButton
+            command="HIGH"
+            background="#f59e0b"
+          >
+            HIGH
+          </ControlButton>
+
+
+          <ControlButton
+            command="MODERATE-HIGH"
+            background="#eab308"
+          >
+            MODERATE-HIGH
+          </ControlButton>
+
+
+          <ControlButton
+            command="MODERATE"
+            background="#84cc16"
+          >
+            MODERATE
+          </ControlButton>
+
+
+          <ControlButton
+            command="OFF"
+            background="#dc2626"
+          >
+            ■ STOP
+          </ControlButton>
+
+        </div>
+
+      </div>
+
+
+      {/* =============================================
+          COMMAND MESSAGE
+      ============================================= */}
+
+      {commandMessage && (
+        <div
+          style={{
+            marginTop: "18px",
+            padding: "11px",
+            borderRadius: "8px",
+            background: "#f1f5f9"
+
