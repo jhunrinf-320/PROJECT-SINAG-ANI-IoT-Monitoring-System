@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+
 import HighestTemperatureChart from "./components/HighestTemperatureChart";
 
 import { initializeApp } from "firebase/app";
+
 import {
   getDatabase,
   ref,
@@ -42,20 +44,11 @@ const DEVICE_PATH = "devices/device001";
 // =====================================================
 
 function App() {
-  const [activePage, setActivePage] =
-    useState("Dashboard");
-
-  const [deviceData, setDeviceData] =
-    useState({});
-
-  const [firebaseConnected, setFirebaseConnected] =
-    useState(false);
-
-  const [sendingCommand, setSendingCommand] =
-    useState(false);
-
-  const [commandMessage, setCommandMessage] =
-    useState("");
+  const [activePage, setActivePage] = useState("Dashboard");
+  const [deviceData, setDeviceData] = useState({});
+  const [firebaseConnected, setFirebaseConnected] = useState(false);
+  const [sendingCommand, setSendingCommand] = useState(false);
+  const [commandMessage, setCommandMessage] = useState("");
 
   // ===================================================
   // FIREBASE
@@ -64,63 +57,56 @@ function App() {
   useEffect(() => {
     let unsubscribeDatabase = null;
 
-    const unsubscribeAuth =
-      onAuthStateChanged(
-        auth,
-        (user) => {
-          if (!user) {
-            setFirebaseConnected(false);
+    const unsubscribeAuth = onAuthStateChanged(
+      auth,
+      (user) => {
+        if (!user) {
+          setFirebaseConnected(false);
 
-            signInAnonymously(auth)
-              .then(() => {
-                console.log(
-                  "Firebase anonymous authentication successful."
-                );
-              })
-              .catch((error) => {
-                console.error(
-                  "Firebase authentication error:",
-                  error
-                );
-              });
+          signInAnonymously(auth)
+            .then(() => {
+              console.log(
+                "Firebase anonymous authentication successful."
+              );
+            })
+            .catch((error) => {
+              console.error(
+                "Firebase authentication error:",
+                error
+              );
+            });
 
-            return;
-          }
-
-          console.log(
-            "Firebase authenticated."
-          );
-
-          setFirebaseConnected(true);
-
-          const deviceRef =
-            ref(
-              database,
-              DEVICE_PATH
-            );
-
-          unsubscribeDatabase =
-            onValue(
-              deviceRef,
-              (snapshot) => {
-                const data =
-                  snapshot.val();
-
-                if (data) {
-                  setDeviceData(data);
-                }
-              },
-              (error) => {
-                console.error(
-                  "Firebase database error:",
-                  error
-                );
-
-                setFirebaseConnected(false);
-              }
-            );
+          return;
         }
-      );
+
+        console.log("Firebase authenticated.");
+        setFirebaseConnected(true);
+
+        const deviceRef = ref(
+          database,
+          DEVICE_PATH
+        );
+
+        unsubscribeDatabase = onValue(
+          deviceRef,
+          (snapshot) => {
+            const data = snapshot.val();
+
+            if (data) {
+              setDeviceData(data);
+            }
+          },
+          (error) => {
+            console.error(
+              "Firebase database error:",
+              error
+            );
+
+            setFirebaseConnected(false);
+          }
+        );
+      }
+    );
 
     return () => {
       unsubscribeAuth();
@@ -135,14 +121,9 @@ function App() {
   // FIREBASE DATA
   // ===================================================
 
-  const sensors =
-    deviceData?.sensors || {};
-
-  const status =
-    deviceData?.status || {};
-
-  const control =
-    deviceData?.control || {};
+  const sensors = deviceData?.sensors || {};
+  const status = deviceData?.status || {};
+  const control = deviceData?.control || {};
 
   // ===================================================
   // SENSOR DATA
@@ -155,6 +136,23 @@ function App() {
 
   const humidity =
     sensors?.humidity ?? "--";
+
+  // ===================================================
+  // HIGHEST TEMPERATURE
+  // ===================================================
+
+  const history = deviceData?.history || {};
+
+  const historyTemperatures = Object.values(history)
+    .map((item) =>
+      Number(item?.storageChamberTemperature)
+    )
+    .filter((value) => Number.isFinite(value));
+
+  const highestTemperature =
+    historyTemperatures.length > 0
+      ? Math.max(...historyTemperatures)
+      : null;
 
   // ===================================================
   // DEVICE ONLINE / OFFLINE
@@ -176,12 +174,10 @@ function App() {
   // ===================================================
 
   const mode =
-    status?.mode ??
-    "OFF";
+    status?.mode ?? "OFF";
 
   const stage =
-    status?.stage ??
-    "OFF";
+    status?.stage ?? "OFF";
 
   const stageRemaining =
     Number(
@@ -202,19 +198,8 @@ function App() {
   // MAIN FAN
   // ===================================================
 
-  /*
-    ESP32 PWM:
-
-    255 = 100%
-    191 = 75%
-    128 = 50%
-    0   = 0%
-  */
-
   const pwm =
-    Number(
-      status?.pwm
-    ) || 0;
+    Number(status?.pwm) || 0;
 
   const mainFan =
     Math.round(
@@ -238,9 +223,7 @@ function App() {
   // FORMAT TIME
   // ===================================================
 
-  const formatTime = (
-    seconds
-  ) => {
+  const formatTime = (seconds) => {
     const value =
       Math.max(
         0,
@@ -250,9 +233,7 @@ function App() {
       );
 
     const hours =
-      Math.floor(
-        value / 3600
-      );
+      Math.floor(value / 3600);
 
     const minutes =
       Math.floor(
@@ -275,9 +256,7 @@ function App() {
   // FIREBASE COMMAND
   // ===================================================
 
-  const sendCommand = async (
-    command
-  ) => {
+  const sendCommand = async (command) => {
     try {
       setSendingCommand(true);
 
@@ -285,16 +264,9 @@ function App() {
         `Sending ${command}...`
       );
 
-      const commandRef =
-        ref(
-          database,
-          `${DEVICE_PATH}/control/mode`
-        );
-
-      // DEBUG
-      console.log(
-        "COMMAND BEING SENT:",
-        JSON.stringify(command)
+      const commandRef = ref(
+        database,
+        `${DEVICE_PATH}/control/mode`
       );
 
       await set(
@@ -456,6 +428,88 @@ function App() {
         </span>
       </div>
     </div>
+  );
+
+  // ===================================================
+  // HIGHEST TEMPERATURE DISPLAY
+  // ===================================================
+
+  const HighestTemperatureDisplay = () => (
+    <section
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "20px",
+        marginBottom: "24px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color: "#6b7280",
+              fontSize: "13px",
+              marginBottom: "10px",
+            }}
+          >
+            Highest Temperature
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: "6px",
+            }}
+          >
+            <strong
+              style={{
+                fontSize: "36px",
+                fontWeight: "700",
+              }}
+            >
+              {highestTemperature !== null
+                ? highestTemperature.toFixed(1)
+                : "--"}
+            </strong>
+
+            <span
+              style={{
+                fontSize: "18px",
+                color: "#6b7280",
+              }}
+            >
+              °C
+            </span>
+          </div>
+
+          <div
+            style={{
+              color: "#6b7280",
+              fontSize: "12px",
+              marginTop: "4px",
+            }}
+          >
+            Reactor Chamber
+          </div>
+        </div>
+
+        <div
+          style={{
+            fontSize: "32px",
+          }}
+        >
+          🌡️
+        </div>
+      </div>
+    </section>
   );
 
   // ===================================================
@@ -686,9 +740,7 @@ function App() {
         </h2>
       </div>
 
-      {/* =============================================
-          AUTOMATIC MODE
-      ============================================= */}
+      {/* AUTOMATIC MODE */}
 
       <div
         style={{
@@ -742,9 +794,7 @@ function App() {
         </div>
       </div>
 
-      {/* =============================================
-          MANUAL MODE
-      ============================================= */}
+      {/* MANUAL MODE */}
 
       <div>
         <h3
@@ -764,8 +814,6 @@ function App() {
             gap: "10px",
           }}
         >
-
-          {/* HIGH → ESP32 HIGH → 100% */}
           <ControlButton
             command="HIGH"
             background="#f59e0b"
@@ -773,7 +821,6 @@ function App() {
             HIGH
           </ControlButton>
 
-          {/* MODERATE → ESP32 MODERATE-HIGH → 75% */}
           <ControlButton
             command="MODERATE-HIGH"
             background="#eab308"
@@ -781,7 +828,6 @@ function App() {
             MODERATE
           </ControlButton>
 
-          {/* LOW → ESP32 MODERATE → 50% */}
           <ControlButton
             command="MODERATE"
             background="#84cc16"
@@ -795,13 +841,8 @@ function App() {
           >
             ■ STOP
           </ControlButton>
-
         </div>
       </div>
-
-      {/* =============================================
-          COMMAND MESSAGE
-      ============================================= */}
 
       {commandMessage && (
         <div
@@ -865,15 +906,23 @@ function App() {
         />
       </div>
 
-      <DryingStatus />
+      {/* HIGHEST TEMPERATURE */}
 
-      <ControlPanel />
+      <HighestTemperatureDisplay />
+
+      {/* CHART */}
 
       <HighestTemperatureChart
-        history={
-          deviceData?.history || {}
-        }
+        history={deviceData?.history || {}}
       />
+
+      {/* DRYING STATUS */}
+
+      <DryingStatus />
+
+      {/* CONTROLS */}
+
+      <ControlPanel />
     </>
   );
 
@@ -935,13 +984,13 @@ function App() {
         />
       </div>
 
-      <DryingStatus />
+      <HighestTemperatureDisplay />
 
       <HighestTemperatureChart
-        history={
-          deviceData?.history || {}
-        }
+        history={deviceData?.history || {}}
       />
+
+      <DryingStatus />
     </>
   );
 
@@ -991,6 +1040,15 @@ function App() {
         <Setting
           title="Reactor Chamber Temperature"
           value={`${reactorTemperature} °C`}
+        />
+
+        <Setting
+          title="Highest Temperature"
+          value={
+            highestTemperature !== null
+              ? `${highestTemperature.toFixed(1)} °C`
+              : "--"
+          }
         />
 
         <Setting
@@ -1067,7 +1125,6 @@ function App() {
           "Arial, Helvetica, sans-serif",
       }}
     >
-
       {/* SIDEBAR */}
 
       <aside
@@ -1135,12 +1192,10 @@ function App() {
                   activePage === page
                     ? "#ffffff"
                     : "transparent",
-
                 color:
                   activePage === page
                     ? "#111827"
                     : "#9ca3af",
-
                 fontWeight:
                   activePage === page
                     ? "700"
