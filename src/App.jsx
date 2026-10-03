@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
-
 import HighestTemperatureChart from "./components/HighestTemperatureChart";
 
 import { initializeApp } from "firebase/app";
-
 import {
   getDatabase,
   ref,
@@ -16,7 +14,6 @@ import {
   signInAnonymously,
   onAuthStateChanged,
 } from "firebase/auth";
-
 
 // =====================================================
 // FIREBASE
@@ -40,7 +37,6 @@ const auth = getAuth(firebaseApp);
 
 const DEVICE_PATH = "devices/device001";
 
-
 // =====================================================
 // APP
 // =====================================================
@@ -61,7 +57,6 @@ function App() {
   const [commandMessage, setCommandMessage] =
     useState("");
 
-
   // ===================================================
   // FIREBASE
   // ===================================================
@@ -73,9 +68,7 @@ function App() {
       onAuthStateChanged(
         auth,
         (user) => {
-
           if (!user) {
-
             setFirebaseConnected(false);
 
             signInAnonymously(auth)
@@ -94,14 +87,11 @@ function App() {
             return;
           }
 
-
           console.log(
             "Firebase authenticated."
           );
 
-
           setFirebaseConnected(true);
-
 
           const deviceRef =
             ref(
@@ -109,49 +99,37 @@ function App() {
               DEVICE_PATH
             );
 
-
           unsubscribeDatabase =
             onValue(
               deviceRef,
               (snapshot) => {
-
                 const data =
                   snapshot.val();
-
 
                 if (data) {
                   setDeviceData(data);
                 }
-
               },
               (error) => {
-
                 console.error(
                   "Firebase database error:",
                   error
                 );
 
                 setFirebaseConnected(false);
-
               }
             );
-
         }
       );
 
-
     return () => {
-
       unsubscribeAuth();
 
       if (unsubscribeDatabase) {
         unsubscribeDatabase();
       }
-
     };
-
   }, []);
-
 
   // ===================================================
   // FIREBASE DATA
@@ -166,17 +144,17 @@ function App() {
   const control =
     deviceData?.control || {};
 
-
   // ===================================================
   // SENSOR DATA
   // ===================================================
 
   const reactorTemperature =
-    sensors?.temp1 ?? "--";
+    sensors?.storageChamberTemperature ??
+    sensors?.temp1 ??
+    "--";
 
   const humidity =
     sensors?.humidity ?? "--";
-
 
   // ===================================================
   // DEVICE ONLINE / OFFLINE
@@ -185,16 +163,13 @@ function App() {
   const lastSeen =
     Number(status?.lastSeen) || 0;
 
-
   const heartbeatIsFresh =
     lastSeen > 0 &&
     Date.now() - lastSeen < 25000;
 
-
   const deviceOnline =
     status?.online === true &&
     heartbeatIsFresh;
-
 
   // ===================================================
   // DEVICE STATUS
@@ -204,29 +179,24 @@ function App() {
     status?.mode ??
     "OFF";
 
-
   const stage =
     status?.stage ??
     "OFF";
-
 
   const stageRemaining =
     Number(
       status?.stageRemainingSeconds
     ) || 0;
 
-
   const totalRemaining =
     Number(
       status?.totalRemainingSeconds
     ) || 0;
 
-
   const totalElapsed =
     Number(
       status?.totalElapsedSeconds
     ) || 0;
-
 
   // ===================================================
   // MAIN FAN
@@ -246,7 +216,6 @@ function App() {
       status?.pwm
     ) || 0;
 
-
   const mainFan =
     Math.round(
       Math.max(
@@ -258,14 +227,12 @@ function App() {
       ) / 255 * 100
     );
 
-
   // ===================================================
   // COOL-AIR FAN
   // ===================================================
 
   const coolFan =
     status?.coolFan === true;
-
 
   // ===================================================
   // FORMAT TIME
@@ -274,7 +241,6 @@ function App() {
   const formatTime = (
     seconds
   ) => {
-
     const value =
       Math.max(
         0,
@@ -283,22 +249,18 @@ function App() {
         )
       );
 
-
     const hours =
       Math.floor(
         value / 3600
       );
-
 
     const minutes =
       Math.floor(
         (value % 3600) / 60
       );
 
-
     const secs =
       value % 60;
-
 
     return (
       String(hours).padStart(2, "0") +
@@ -307,9 +269,7 @@ function App() {
       ":" +
       String(secs).padStart(2, "0")
     );
-
   };
-
 
   // ===================================================
   // FIREBASE COMMAND
@@ -318,15 +278,12 @@ function App() {
   const sendCommand = async (
     command
   ) => {
-
     try {
-
       setSendingCommand(true);
 
       setCommandMessage(
         `Sending ${command}...`
       );
-
 
       const commandRef =
         ref(
@@ -334,49 +291,44 @@ function App() {
           `${DEVICE_PATH}/control/mode`
         );
 
+      // DEBUG
+      console.log(
+        "COMMAND BEING SENT:",
+        JSON.stringify(command)
+      );
 
       await set(
         commandRef,
         command
       );
 
-
       console.log(
         "Firebase command sent:",
         command
       );
 
-
       setCommandMessage(
         `Command "${command}" sent successfully.`
       );
-
 
       setTimeout(() => {
         setCommandMessage("");
       }, 2500);
 
-
     } catch (error) {
-
       console.error(
         "Command error:",
         error
       );
-
 
       setCommandMessage(
         "Failed to send command."
       );
 
     } finally {
-
       setSendingCommand(false);
-
     }
-
   };
-
 
   // ===================================================
   // PAGE HEADER
@@ -386,7 +338,6 @@ function App() {
     title,
     subtitle,
   }) => (
-
     <div
       style={{
         display: "flex",
@@ -395,9 +346,7 @@ function App() {
         marginBottom: "25px",
       }}
     >
-
       <div>
-
         <div
           style={{
             fontSize: "11px",
@@ -409,7 +358,6 @@ function App() {
           SINAG-ANI
         </div>
 
-
         <h1
           style={{
             margin: "5px 0",
@@ -419,7 +367,6 @@ function App() {
           {title}
         </h1>
 
-
         <p
           style={{
             margin: 0,
@@ -428,9 +375,7 @@ function App() {
         >
           {subtitle}
         </p>
-
       </div>
-
 
       <div
         style={{
@@ -441,7 +386,6 @@ function App() {
           color: "#6b7280",
         }}
       >
-
         <span
           style={{
             width: "9px",
@@ -454,17 +398,12 @@ function App() {
           }}
         />
 
-
         {firebaseConnected
           ? "Firebase Connected"
           : "Firebase Connecting..."}
-
       </div>
-
     </div>
-
   );
-
 
   // ===================================================
   // SENSOR CARD
@@ -475,7 +414,6 @@ function App() {
     value,
     unit,
   }) => (
-
     <div
       style={{
         background: "#ffffff",
@@ -484,7 +422,6 @@ function App() {
         padding: "20px",
       }}
     >
-
       <div
         style={{
           color: "#6b7280",
@@ -495,7 +432,6 @@ function App() {
         {title}
       </div>
 
-
       <div
         style={{
           display: "flex",
@@ -503,7 +439,6 @@ function App() {
           gap: "5px",
         }}
       >
-
         <strong
           style={{
             fontSize: "28px",
@@ -512,7 +447,6 @@ function App() {
           {value}
         </strong>
 
-
         <span
           style={{
             color: "#6b7280",
@@ -520,13 +454,9 @@ function App() {
         >
           {unit}
         </span>
-
       </div>
-
     </div>
-
   );
-
 
   // ===================================================
   // STATUS ITEM
@@ -536,7 +466,6 @@ function App() {
     title,
     value,
   }) => (
-
     <div
       style={{
         background: "#f8fafc",
@@ -544,7 +473,6 @@ function App() {
         padding: "14px",
       }}
     >
-
       <div
         style={{
           color: "#6b7280",
@@ -555,22 +483,17 @@ function App() {
         {title}
       </div>
 
-
       <strong>
         {value}
       </strong>
-
     </div>
-
   );
-
 
   // ===================================================
   // DRYING STATUS
   // ===================================================
 
   const DryingStatus = () => (
-
     <section
       style={{
         background: "#ffffff",
@@ -580,7 +503,6 @@ function App() {
         marginBottom: "24px",
       }}
     >
-
       <div
         style={{
           display: "flex",
@@ -589,9 +511,7 @@ function App() {
           marginBottom: "20px",
         }}
       >
-
         <div>
-
           <div
             style={{
               color: "#6b7280",
@@ -603,7 +523,6 @@ function App() {
             CURRENT SINAG-ANI OPERATION
           </div>
 
-
           <h2
             style={{
               margin: "5px 0 0",
@@ -611,9 +530,7 @@ function App() {
           >
             Drying Status
           </h2>
-
         </div>
-
 
         <div
           style={{
@@ -635,9 +552,7 @@ function App() {
             ? "● ONLINE"
             : "● OFFLINE"}
         </div>
-
       </div>
-
 
       <div
         style={{
@@ -647,42 +562,35 @@ function App() {
           gap: "12px",
         }}
       >
-
         <StatusItem
           title="Mode"
           value={mode}
         />
-
 
         <StatusItem
           title="Stage"
           value={stage}
         />
 
-
         <StatusItem
           title="Stage Time Remaining"
           value={formatTime(stageRemaining)}
         />
-
 
         <StatusItem
           title="Total Time Remaining"
           value={formatTime(totalRemaining)}
         />
 
-
         <StatusItem
           title="Total Elapsed"
           value={formatTime(totalElapsed)}
         />
 
-
         <StatusItem
           title="Main Fan"
           value={`${mainFan}%`}
         />
-
 
         <StatusItem
           title="Cool-Air Fan"
@@ -693,7 +601,6 @@ function App() {
           }
         />
 
-
         <StatusItem
           title="Firebase"
           value={
@@ -702,13 +609,9 @@ function App() {
               : "DISCONNECTED"
           }
         />
-
       </div>
-
     </section>
-
   );
-
 
   // ===================================================
   // CONTROL BUTTON
@@ -719,7 +622,6 @@ function App() {
     background,
     command,
   }) => (
-
     <button
       disabled={sendingCommand}
       onClick={() =>
@@ -743,16 +645,13 @@ function App() {
     >
       {children}
     </button>
-
   );
-
 
   // ===================================================
   // CONTROL PANEL
   // ===================================================
 
   const ControlPanel = () => (
-
     <section
       style={{
         background: "#ffffff",
@@ -762,13 +661,11 @@ function App() {
         marginBottom: "24px",
       }}
     >
-
       <div
         style={{
           marginBottom: "22px",
         }}
       >
-
         <div
           style={{
             color: "#6b7280",
@@ -780,7 +677,6 @@ function App() {
           SYSTEM CONTROL
         </div>
 
-
         <h2
           style={{
             margin: "5px 0 0",
@@ -788,9 +684,7 @@ function App() {
         >
           Drying Controls
         </h2>
-
       </div>
-
 
       {/* =============================================
           AUTOMATIC MODE
@@ -801,7 +695,6 @@ function App() {
           marginBottom: "28px",
         }}
       >
-
         <h3
           style={{
             fontSize: "15px",
@@ -811,7 +704,6 @@ function App() {
           Automatic Mode
         </h3>
 
-
         <div
           style={{
             display: "grid",
@@ -820,14 +712,12 @@ function App() {
             gap: "10px",
           }}
         >
-
           <ControlButton
             command="AUTO"
             background="#16a34a"
           >
             ▶ AUTOMATIC
           </ControlButton>
-
 
           <ControlButton
             command="PAUSE"
@@ -836,7 +726,6 @@ function App() {
             ⏸ PAUSE
           </ControlButton>
 
-
           <ControlButton
             command="RESUME"
             background="#2563eb"
@@ -844,25 +733,20 @@ function App() {
             ▶ RESUME
           </ControlButton>
 
-
           <ControlButton
             command="STOP"
             background="#dc2626"
           >
             ■ STOP
           </ControlButton>
-
         </div>
-
       </div>
-
 
       {/* =============================================
           MANUAL MODE
       ============================================= */}
 
       <div>
-
         <h3
           style={{
             fontSize: "15px",
@@ -872,7 +756,6 @@ function App() {
           Manual Mode
         </h3>
 
-
         <div
           style={{
             display: "grid",
@@ -882,6 +765,7 @@ function App() {
           }}
         >
 
+          {/* HIGH → ESP32 HIGH → 100% */}
           <ControlButton
             command="HIGH"
             background="#f59e0b"
@@ -889,22 +773,21 @@ function App() {
             HIGH
           </ControlButton>
 
-
+          {/* MODERATE → ESP32 MODERATE-HIGH → 75% */}
           <ControlButton
             command="MODERATE-HIGH"
             background="#eab308"
           >
-            MODERATE-HIGH
+            MODERATE
           </ControlButton>
 
-
+          {/* LOW → ESP32 MODERATE → 50% */}
           <ControlButton
             command="MODERATE"
             background="#84cc16"
           >
-            MODERATE
+            LOW
           </ControlButton>
-
 
           <ControlButton
             command="STOP"
@@ -914,16 +797,13 @@ function App() {
           </ControlButton>
 
         </div>
-
       </div>
-
 
       {/* =============================================
           COMMAND MESSAGE
       ============================================= */}
 
       {commandMessage && (
-
         <div
           style={{
             marginTop: "18px",
@@ -936,31 +816,22 @@ function App() {
         >
           {commandMessage}
         </div>
-
       )}
-
     </section>
-
   );
-
 
   // ===================================================
   // DASHBOARD
   // ===================================================
 
   const Dashboard = () => (
-
     <>
-
       <PageHeader
         title="Dashboard"
         subtitle="SINAG-ANI IoT Solar Food Drying System"
       />
 
-
-      {/* =============================================
-          SENSOR CARDS
-      ============================================= */}
+      {/* SENSOR CARDS */}
 
       <div
         style={{
@@ -971,20 +842,17 @@ function App() {
           marginBottom: "24px",
         }}
       >
-
         <SensorCard
           title="Reactor Chamber Temperature"
           value={reactorTemperature}
           unit="°C"
         />
 
-
         <SensorCard
           title="Humidity"
           value={humidity}
           unit="%"
         />
-
 
         <SensorCard
           title="Device Status"
@@ -995,54 +863,45 @@ function App() {
           }
           unit=""
         />
-
       </div>
-
 
       <DryingStatus />
 
-
       <ControlPanel />
 
+      <HighestTemperatureChart
+        history={
+          deviceData?.history || {}
+        }
+      />
     </>
-
   );
-
 
   // ===================================================
   // CONTROL PAGE
   // ===================================================
 
   const ControlPage = () => (
-
     <>
-
       <PageHeader
         title="Control"
         subtitle="Control the SINAG-ANI drying operation"
       />
 
-
       <ControlPanel />
-
     </>
-
   );
-
 
   // ===================================================
   // MONITORING PAGE
   // ===================================================
 
   const Monitoring = () => (
-
     <>
-
       <PageHeader
         title="Monitoring"
         subtitle="Real-time sensor monitoring"
       />
-
 
       <div
         style={{
@@ -1053,20 +912,17 @@ function App() {
           marginBottom: "24px",
         }}
       >
-
         <SensorCard
           title="Reactor Chamber Temperature"
           value={reactorTemperature}
           unit="°C"
         />
 
-
         <SensorCard
           title="Humidity"
           value={humidity}
           unit="%"
         />
-
 
         <SensorCard
           title="Device Status"
@@ -1077,30 +933,28 @@ function App() {
           }
           unit=""
         />
-
       </div>
-
 
       <DryingStatus />
 
+      <HighestTemperatureChart
+        history={
+          deviceData?.history || {}
+        }
+      />
     </>
-
   );
-
 
   // ===================================================
   // SETTINGS
   // ===================================================
 
   const Settings = () => (
-
     <>
-
       <PageHeader
         title="Settings"
         subtitle="SINAG-ANI device information"
       />
-
 
       <section
         style={{
@@ -1111,12 +965,10 @@ function App() {
           maxWidth: "700px",
         }}
       >
-
         <Setting
           title="Device ID"
           value="device001"
         />
-
 
         <Setting
           title="Firebase"
@@ -1127,7 +979,6 @@ function App() {
           }
         />
 
-
         <Setting
           title="Device"
           value={
@@ -1137,24 +988,18 @@ function App() {
           }
         />
 
-
         <Setting
           title="Reactor Chamber Temperature"
           value={`${reactorTemperature} °C`}
         />
 
-
         <Setting
           title="Database"
           value="Realtime Database"
         />
-
       </section>
-
     </>
-
   );
-
 
   // ===================================================
   // SETTING
@@ -1164,7 +1009,6 @@ function App() {
     title,
     value,
   }) => (
-
     <div
       style={{
         display: "flex",
@@ -1174,7 +1018,6 @@ function App() {
           "1px solid #e5e7eb",
       }}
     >
-
       <span
         style={{
           color: "#6b7280",
@@ -1183,24 +1026,18 @@ function App() {
         {title}
       </span>
 
-
       <strong>
         {value}
       </strong>
-
     </div>
-
   );
-
 
   // ===================================================
   // PAGE ROUTER
   // ===================================================
 
   const renderPage = () => {
-
     switch (activePage) {
-
       case "Control":
         return <ControlPage />;
 
@@ -1213,18 +1050,14 @@ function App() {
       case "Dashboard":
       default:
         return <Dashboard />;
-
     }
-
   };
-
 
   // ===================================================
   // WEBSITE
   // ===================================================
 
   return (
-
     <div
       style={{
         minHeight: "100vh",
@@ -1235,9 +1068,7 @@ function App() {
       }}
     >
 
-      {/* =============================================
-          SIDEBAR
-      ============================================= */}
+      {/* SIDEBAR */}
 
       <aside
         style={{
@@ -1252,13 +1083,11 @@ function App() {
           bottom: 0,
         }}
       >
-
         <div
           style={{
             marginBottom: "35px",
           }}
         >
-
           <h2
             style={{
               margin: 0,
@@ -1268,7 +1097,6 @@ function App() {
             SINAG-ANI
           </h2>
 
-
           <span
             style={{
               color: "#9ca3af",
@@ -1277,9 +1105,7 @@ function App() {
           >
             IoT Solar Dryer
           </span>
-
         </div>
-
 
         <nav
           style={{
@@ -1288,14 +1114,12 @@ function App() {
             gap: "8px",
           }}
         >
-
           {[
             "Dashboard",
             "Control",
             "Monitoring",
             "Settings",
           ].map((page) => (
-
             <button
               key={page}
               onClick={() =>
@@ -1325,11 +1149,8 @@ function App() {
             >
               {page}
             </button>
-
           ))}
-
         </nav>
-
 
         <div
           style={{
@@ -1340,7 +1161,6 @@ function App() {
             fontSize: "12px",
           }}
         >
-
           <span
             style={{
               display: "inline-block",
@@ -1355,19 +1175,13 @@ function App() {
             }}
           />
 
-
           {deviceOnline
             ? "Device Online"
             : "Device Offline"}
-
         </div>
-
       </aside>
 
-
-      {/* =============================================
-          MAIN CONTENT
-      ============================================= */}
+      {/* MAIN CONTENT */}
 
       <main
         style={{
@@ -1375,7 +1189,6 @@ function App() {
           minHeight: "100vh",
         }}
       >
-
         <header
           style={{
             height: "65px",
@@ -1387,11 +1200,9 @@ function App() {
             padding: "0 25px",
           }}
         >
-
           <strong>
             {activePage}
           </strong>
-
 
           <div
             style={{
@@ -1402,9 +1213,7 @@ function App() {
           >
             device001
           </div>
-
         </header>
-
 
         <main
           style={{
@@ -1413,17 +1222,11 @@ function App() {
             margin: "0 auto",
           }}
         >
-
           {renderPage()}
-
         </main>
-
       </main>
-
     </div>
-
   );
-
 }
 
 export default App;
