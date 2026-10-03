@@ -42,27 +42,16 @@ const DEVICE_PATH = "devices/device001";
 
 
 // =====================================================
-// TIMER SETTINGS
-// =====================================================
-
-const INITIAL_TIME = 60 * 60;        // 1 hour
-const MAIN_TIME = 2 * 60 * 60;       // 2 hours
-const FINAL_TIME = 2 * 60 * 60;      // 2 hours
-
-const TOTAL_TIME =
-  INITIAL_TIME +
-  MAIN_TIME +
-  FINAL_TIME;
-
-
-// =====================================================
 // APP
 // =====================================================
 
 function App() {
-  const [activePage, setActivePage] = useState("Dashboard");
 
-  const [deviceData, setDeviceData] = useState({});
+  const [activePage, setActivePage] =
+    useState("Dashboard");
+
+  const [deviceData, setDeviceData] =
+    useState({});
 
   const [firebaseConnected, setFirebaseConnected] =
     useState(false);
@@ -75,278 +64,260 @@ function App() {
 
 
   // ===================================================
-  // TIMER STATE
-  // ===================================================
-
-  const [timerRunning, setTimerRunning] =
-    useState(false);
-
-  const [timerInitialized, setTimerInitialized] =
-    useState(false);
-
-  const [localTimerElapsed, setLocalTimerElapsed] =
-    useState(0);
-
-
-  // ===================================================
-  // FIREBASE
+  // FIREBASE LISTENER
   // ===================================================
 
   useEffect(() => {
+
     let unsubscribeDatabase = null;
 
-    const unsubscribeAuth = onAuthStateChanged(
-      auth,
-      (user) => {
-        if (!user) {
-          setFirebaseConnected(false);
+    const unsubscribeAuth =
+      onAuthStateChanged(
+        auth,
+        (user) => {
 
-          signInAnonymously(auth)
-            .then(() => {
-              console.log(
-                "Firebase anonymous authentication successful."
-              );
-            })
-            .catch((error) => {
-              console.error(
-                "Firebase authentication error:",
-                error
-              );
-            });
-
-          return;
-        }
-
-        console.log("Firebase authenticated.");
-
-        setFirebaseConnected(true);
-
-        const deviceRef = ref(
-          database,
-          DEVICE_PATH
-        );
-
-        unsubscribeDatabase = onValue(
-          deviceRef,
-          (snapshot) => {
-            const data = snapshot.val();
-
-            if (data) {
-              setDeviceData(data);
-            }
-          },
-          (error) => {
-            console.error(
-              "Firebase database error:",
-              error
-            );
+          if (!user) {
 
             setFirebaseConnected(false);
+
+            signInAnonymously(auth)
+              .then(() => {
+                console.log(
+                  "Firebase anonymous authentication successful."
+                );
+              })
+              .catch((error) => {
+                console.error(
+                  "Firebase authentication error:",
+                  error
+                );
+              });
+
+            return;
           }
-        );
-      }
-    );
+
+
+          console.log(
+            "Firebase authenticated."
+          );
+
+
+          setFirebaseConnected(true);
+
+
+          const deviceRef =
+            ref(
+              database,
+              DEVICE_PATH
+            );
+
+
+          unsubscribeDatabase =
+            onValue(
+              deviceRef,
+              (snapshot) => {
+
+                const data =
+                  snapshot.val();
+
+
+                if (data) {
+                  setDeviceData(data);
+                }
+
+              },
+              (error) => {
+
+                console.error(
+                  "Firebase database error:",
+                  error
+                );
+
+                setFirebaseConnected(false);
+
+              }
+            );
+
+        }
+      );
+
 
     return () => {
+
       unsubscribeAuth();
 
       if (unsubscribeDatabase) {
         unsubscribeDatabase();
       }
+
     };
+
   }, []);
 
 
   // ===================================================
-  // TIMER COUNTDOWN
+  // FIREBASE DATA
   // ===================================================
 
-  useEffect(() => {
-    if (!timerRunning) {
-      return;
-    }
+  const sensors =
+    deviceData?.sensors || {};
 
-    const interval = setInterval(() => {
-      setLocalTimerElapsed((previous) => {
-        const nextValue = previous + 1;
+  const status =
+    deviceData?.status || {};
 
-        return Math.min(
-          nextValue,
-          TOTAL_TIME
-        );
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [timerRunning]);
+  const control =
+    deviceData?.control || {};
 
 
   // ===================================================
-  // TIMER AUTO STOP
+  // SENSOR DATA
   // ===================================================
 
-  useEffect(() => {
-    if (
-      timerRunning &&
-      localTimerElapsed >= TOTAL_TIME
-    ) {
-      setLocalTimerElapsed(TOTAL_TIME);
-      setTimerRunning(false);
-    }
-  }, [
-    timerRunning,
-    localTimerElapsed,
-  ]);
+  const temperature1 =
+    sensors?.temp1 ?? "--";
+
+  const temperature2 =
+    sensors?.temp2 ?? "--";
+
+  const humidity =
+    sensors?.humidity ?? "--";
 
 
   // ===================================================
-  // SENSOR / DEVICE DATA
+  // DEVICE ONLINE / OFFLINE
   // ===================================================
 
-  const sensors = deviceData?.sensors || {};
-  const control = deviceData?.control || {};
+  /*
+    ESP32 sends:
+      status/online
+      status/lastSeen
 
-  const temperature1 = sensors?.temp1 ?? "--";
-  const temperature2 = sensors?.temp2 ?? "--";
-  const humidity = sensors?.humidity ?? "--";
+    lastSeen is a Firebase server timestamp.
+
+    We use both values so the website can
+    automatically become OFFLINE when the ESP32
+    stops sending heartbeats.
+  */
+
+  const lastSeen =
+    Number(status?.lastSeen) || 0;
+
+
+  const heartbeatIsFresh =
+    lastSeen > 0 &&
+    Date.now() - lastSeen < 25000;
+
 
   const deviceOnline =
-    sensors?.online === true ||
-    deviceData?.online === true;
+    status?.online === true &&
+    heartbeatIsFresh;
+
+
+  // ===================================================
+  // DEVICE STATUS
+  // ===================================================
 
   const mode =
-    sensors?.mode ??
-    control?.mode ??
+    status?.mode ??
     "OFF";
+
 
   const stage =
-    sensors?.stage ??
+    status?.stage ??
     "OFF";
 
 
-  // ===================================================
-  // FIREBASE TIMER VALUES
-  // ===================================================
+  const stageRemaining =
+    Number(
+      status?.stageRemainingSeconds
+    ) || 0;
 
-  const firebaseStageRemaining =
-    sensors?.stageRemainingSeconds ??
-    control?.stageRemainingSeconds ??
-    0;
 
-  const firebaseTotalRemaining =
-    sensors?.totalRemainingSeconds ??
-    control?.totalRemainingSeconds ??
-    0;
+  const totalRemaining =
+    Number(
+      status?.totalRemainingSeconds
+    ) || 0;
 
-  const firebaseTotalElapsed =
-    sensors?.totalElapsedSeconds ??
-    control?.totalElapsedSeconds ??
-    0;
+
+  const totalElapsed =
+    Number(
+      status?.totalElapsedSeconds
+    ) || 0;
 
 
   // ===================================================
-  // LOCAL TIMER VALUES
+  // MAIN FAN
   // ===================================================
 
-  let localStageRemaining = 0;
+  /*
+    ESP32 sends PWM as:
 
-  let localTotalRemaining =
-    Math.max(
-      0,
-      TOTAL_TIME - localTimerElapsed
+      255 = 100%
+      191 = 75%
+      128 = 50%
+      0   = 0%
+
+    Convert PWM to percentage here.
+  */
+
+  const pwm =
+    Number(
+      status?.pwm
+    ) || 0;
+
+
+  const mainFan =
+    Math.round(
+      Math.max(
+        0,
+        Math.min(
+          255,
+          pwm
+        )
+      ) / 255 * 100
     );
 
 
   // ===================================================
-  // DETERMINE CURRENT STAGE TIMER
+  // COOL-AIR FAN
   // ===================================================
-
-  if (
-    localTimerElapsed < INITIAL_TIME
-  ) {
-    localStageRemaining =
-      INITIAL_TIME -
-      localTimerElapsed;
-
-  } else if (
-    localTimerElapsed <
-    INITIAL_TIME + MAIN_TIME
-  ) {
-
-    localStageRemaining =
-      INITIAL_TIME +
-      MAIN_TIME -
-      localTimerElapsed;
-
-  } else if (
-    localTimerElapsed <
-    TOTAL_TIME
-  ) {
-
-    localStageRemaining =
-      TOTAL_TIME -
-      localTimerElapsed;
-
-  } else {
-
-    localStageRemaining = 0;
-  }
-
-
-  // ===================================================
-  // DISPLAY TIMER VALUES
-  // ===================================================
-
-  const stageRemaining =
-    timerInitialized
-      ? localStageRemaining
-      : firebaseStageRemaining;
-
-  const totalRemaining =
-    timerInitialized
-      ? localTotalRemaining
-      : firebaseTotalRemaining;
-
-  const totalElapsed =
-    timerInitialized
-      ? localTimerElapsed
-      : firebaseTotalElapsed;
-
-
-  const mainFan =
-    sensors?.pwm ??
-    sensors?.mainFan ??
-    control?.pwm ??
-    0;
 
   const coolFan =
-    sensors?.coolFan === true ||
-    control?.coolFan === true;
+    status?.coolFan === true;
 
 
   // ===================================================
   // FORMAT TIME
   // ===================================================
 
-  const formatTime = (seconds) => {
-    const value = Math.max(
-      0,
+  const formatTime = (
+    seconds
+  ) => {
+
+    const value =
+      Math.max(
+        0,
+        Math.floor(
+          Number(seconds) || 0
+        )
+      );
+
+
+    const hours =
       Math.floor(
-        Number(seconds) || 0
-      )
-    );
+        value / 3600
+      );
 
-    const hours = Math.floor(
-      value / 3600
-    );
 
-    const minutes = Math.floor(
-      (value % 3600) / 60
-    );
+    const minutes =
+      Math.floor(
+        (value % 3600) / 60
+      );
 
-    const secs = value % 60;
+
+    const secs =
+      value % 60;
+
 
     return (
       String(hours).padStart(2, "0") +
@@ -355,100 +326,7 @@ function App() {
       ":" +
       String(secs).padStart(2, "0")
     );
-  };
 
-
-  // ===================================================
-  // TIMER COMMAND HANDLER
-  // ===================================================
-
-  const handleTimerCommand = (
-    command
-  ) => {
-
-    // ================================================
-    // AUTOMATIC
-    // ================================================
-
-    if (
-      command === "AUTO"
-    ) {
-
-      /*
-        Start a new 5-hour drying cycle
-        if no timer currently exists.
-      */
-
-      if (
-        !timerInitialized ||
-        localTimerElapsed >= TOTAL_TIME
-      ) {
-
-        setLocalTimerElapsed(0);
-
-        setTimerInitialized(true);
-      }
-
-      /*
-        Start / continue the timer.
-      */
-
-      setTimerRunning(true);
-
-      return;
-    }
-
-
-    // ================================================
-    // PAUSE
-    // ================================================
-
-    if (
-      command === "PAUSE"
-    ) {
-
-      setTimerRunning(false);
-
-      return;
-    }
-
-
-    // ================================================
-    // RESUME
-    // ================================================
-
-    if (
-      command === "RESUME"
-    ) {
-
-      if (
-        timerInitialized &&
-        localTimerElapsed < TOTAL_TIME
-      ) {
-
-        setTimerRunning(true);
-      }
-
-      return;
-    }
-
-
-    // ================================================
-    // STOP
-    // ================================================
-
-    if (
-      command === "OFF"
-    ) {
-
-      setTimerRunning(false);
-
-      setTimerInitialized(false);
-
-      setLocalTimerElapsed(0);
-
-      return;
-    }
   };
 
 
@@ -464,15 +342,27 @@ function App() {
 
       setSendingCommand(true);
 
+
       setCommandMessage(
         `Sending ${command}...`
       );
 
 
-      const commandRef = ref(
-        database,
-        `${DEVICE_PATH}/control/mode`
-      );
+      /*
+        IMPORTANT:
+
+        The ESP32 firmware reads ONLY:
+
+        devices/device001/control/mode
+
+        So all commands must be written here.
+      */
+
+      const commandRef =
+        ref(
+          database,
+          `${DEVICE_PATH}/control/mode`
+        );
 
 
       await set(
@@ -481,11 +371,8 @@ function App() {
       );
 
 
-      // ==============================================
-      // TIMER CONTROL
-      // ==============================================
-
-      handleTimerCommand(
+      console.log(
+        "Firebase command sent:",
         command
       );
 
@@ -497,7 +384,7 @@ function App() {
 
       setTimeout(() => {
         setCommandMessage("");
-      }, 3000);
+      }, 2500);
 
 
     } catch (error) {
@@ -518,6 +405,7 @@ function App() {
       setSendingCommand(false);
 
     }
+
   };
 
 
@@ -529,6 +417,7 @@ function App() {
     title,
     subtitle,
   }) => (
+
     <div
       style={{
         display: "flex",
@@ -604,6 +493,7 @@ function App() {
       </div>
 
     </div>
+
   );
 
 
@@ -616,6 +506,7 @@ function App() {
     value,
     unit,
   }) => (
+
     <div
       style={{
         background: "#ffffff",
@@ -664,6 +555,7 @@ function App() {
       </div>
 
     </div>
+
   );
 
 
@@ -675,6 +567,7 @@ function App() {
     title,
     value,
   }) => (
+
     <div
       style={{
         background: "#f8fafc",
@@ -694,9 +587,12 @@ function App() {
       </div>
 
 
-      <strong>{value}</strong>
+      <strong>
+        {value}
+      </strong>
 
     </div>
+
   );
 
 
@@ -705,6 +601,7 @@ function App() {
   // ===================================================
 
   const DryingStatus = () => (
+
     <section
       style={{
         background: "#ffffff",
@@ -814,7 +711,7 @@ function App() {
 
         <StatusItem
           title="Main Fan"
-          value={`${Number(mainFan) || 0}%`}
+          value={`${mainFan}%`}
         />
 
 
@@ -840,6 +737,7 @@ function App() {
       </div>
 
     </section>
+
   );
 
 
@@ -852,6 +750,7 @@ function App() {
     background,
     command,
   }) => (
+
     <button
       disabled={sendingCommand}
       onClick={() =>
@@ -875,6 +774,7 @@ function App() {
     >
       {children}
     </button>
+
   );
 
 
@@ -883,6 +783,7 @@ function App() {
   // ===================================================
 
   const ControlPanel = () => (
+
     <section
       style={{
         background: "#ffffff",
@@ -976,7 +877,7 @@ function App() {
 
 
           <ControlButton
-            command="OFF"
+            command="STOP"
             background="#dc2626"
           >
             ■ STOP
@@ -1037,7 +938,7 @@ function App() {
 
 
           <ControlButton
-            command="OFF"
+            command="STOP"
             background="#dc2626"
           >
             ■ STOP
@@ -1053,6 +954,7 @@ function App() {
       ============================================= */}
 
       {commandMessage && (
+
         <div
           style={{
             marginTop: "18px",
@@ -1065,9 +967,11 @@ function App() {
         >
           {commandMessage}
         </div>
+
       )}
 
     </section>
+
   );
 
 
@@ -1076,13 +980,17 @@ function App() {
   // ===================================================
 
   const Dashboard = () => (
+
     <>
+
       <PageHeader
         title="Dashboard"
         subtitle="SINAG-ANI IoT Solar Food Drying System"
       />
 
+
       <DryingStatus />
+
 
       <div
         style={{
@@ -1100,17 +1008,20 @@ function App() {
           unit="°C"
         />
 
+
         <SensorCard
           title="Temperature Sensor 2"
           value={temperature2}
           unit="°C"
         />
 
+
         <SensorCard
           title="Humidity"
           value={humidity}
           unit="%"
         />
+
 
         <SensorCard
           title="Device Status"
@@ -1124,13 +1035,18 @@ function App() {
 
       </div>
 
+
       <ControlPanel />
 
+
       <HighestTemperatureChart
-        history={deviceData?.history || {}}
+        history={
+          deviceData?.history || {}
+        }
       />
 
     </>
+
   );
 
 
@@ -1139,14 +1055,19 @@ function App() {
   // ===================================================
 
   const ControlPage = () => (
+
     <>
+
       <PageHeader
         title="Control"
         subtitle="Control the SINAG-ANI drying operation"
       />
 
+
       <ControlPanel />
+
     </>
+
   );
 
 
@@ -1155,11 +1076,14 @@ function App() {
   // ===================================================
 
   const Monitoring = () => (
+
     <>
+
       <PageHeader
         title="Monitoring"
         subtitle="Real-time sensor monitoring"
       />
+
 
       <div
         style={{
@@ -1177,17 +1101,20 @@ function App() {
           unit="°C"
         />
 
+
         <SensorCard
           title="Temperature Sensor 2"
           value={temperature2}
           unit="°C"
         />
 
+
         <SensorCard
           title="Humidity"
           value={humidity}
           unit="%"
         />
+
 
         <SensorCard
           title="Device Status"
@@ -1201,9 +1128,11 @@ function App() {
 
       </div>
 
+
       <DryingStatus />
 
     </>
+
   );
 
 
@@ -1212,11 +1141,14 @@ function App() {
   // ===================================================
 
   const Settings = () => (
+
     <>
+
       <PageHeader
         title="Settings"
         subtitle="SINAG-ANI device information"
       />
+
 
       <section
         style={{
@@ -1233,6 +1165,7 @@ function App() {
           value="device001"
         />
 
+
         <Setting
           title="Firebase"
           value={
@@ -1241,6 +1174,7 @@ function App() {
               : "Disconnected"
           }
         />
+
 
         <Setting
           title="Device"
@@ -1251,6 +1185,7 @@ function App() {
           }
         />
 
+
         <Setting
           title="Database"
           value="Realtime Database"
@@ -1259,6 +1194,7 @@ function App() {
       </section>
 
     </>
+
   );
 
 
@@ -1270,6 +1206,7 @@ function App() {
     title,
     value,
   }) => (
+
     <div
       style={{
         display: "flex",
@@ -1288,9 +1225,13 @@ function App() {
         {title}
       </span>
 
-      <strong>{value}</strong>
+
+      <strong>
+        {value}
+      </strong>
 
     </div>
+
   );
 
 
@@ -1316,6 +1257,7 @@ function App() {
         return <Dashboard />;
 
     }
+
   };
 
 
@@ -1324,6 +1266,7 @@ function App() {
   // ===================================================
 
   return (
+
     <div
       style={{
         minHeight: "100vh",
@@ -1367,6 +1310,7 @@ function App() {
             SINAG-ANI
           </h2>
 
+
           <span
             style={{
               color: "#9ca3af",
@@ -1377,6 +1321,7 @@ function App() {
           </span>
 
         </div>
+
 
         <nav
           style={{
@@ -1404,7 +1349,6 @@ function App() {
                 padding: "13px",
                 textAlign: "left",
                 cursor: "pointer",
-
                 background:
                   activePage === page
                     ? "#ffffff"
@@ -1427,6 +1371,7 @@ function App() {
           ))}
 
         </nav>
+
 
         <div
           style={{
@@ -1451,6 +1396,7 @@ function App() {
                   : "#9ca3af",
             }}
           />
+
 
           {deviceOnline
             ? "Device Online"
@@ -1488,6 +1434,7 @@ function App() {
             {activePage}
           </strong>
 
+
           <div
             style={{
               marginLeft: "auto",
@@ -1500,6 +1447,7 @@ function App() {
 
         </header>
 
+
         <main
           style={{
             padding: "30px",
@@ -1507,13 +1455,17 @@ function App() {
             margin: "0 auto",
           }}
         >
+
           {renderPage()}
+
         </main>
 
       </main>
 
     </div>
+
   );
+
 }
 
 export default App;
