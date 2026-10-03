@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 
-import HighestTemperatureChart from "./components/HighestTemperatureChart";
-
 import { initializeApp } from "firebase/app";
 
 import {
@@ -46,7 +44,6 @@ const DEVICE_PATH = "devices/device001";
 // =====================================================
 
 function App() {
-
   const [activePage, setActivePage] =
     useState("Dashboard");
 
@@ -64,11 +61,10 @@ function App() {
 
 
   // ===================================================
-  // FIREBASE LISTENER
+  // FIREBASE
   // ===================================================
 
   useEffect(() => {
-
     let unsubscribeDatabase = null;
 
     const unsubscribeAuth =
@@ -173,11 +169,8 @@ function App() {
   // SENSOR DATA
   // ===================================================
 
-  const temperature1 =
+  const reactorTemperature =
     sensors?.temp1 ?? "--";
-
-  const temperature2 =
-    sensors?.temp2 ?? "--";
 
   const humidity =
     sensors?.humidity ?? "--";
@@ -186,18 +179,6 @@ function App() {
   // ===================================================
   // DEVICE ONLINE / OFFLINE
   // ===================================================
-
-  /*
-    ESP32 sends:
-      status/online
-      status/lastSeen
-
-    lastSeen is a Firebase server timestamp.
-
-    We use both values so the website can
-    automatically become OFFLINE when the ESP32
-    stops sending heartbeats.
-  */
 
   const lastSeen =
     Number(status?.lastSeen) || 0;
@@ -250,14 +231,12 @@ function App() {
   // ===================================================
 
   /*
-    ESP32 sends PWM as:
+    ESP32 PWM:
 
-      255 = 100%
-      191 = 75%
-      128 = 50%
-      0   = 0%
-
-    Convert PWM to percentage here.
+    255 = 100%
+    191 = 75%
+    128 = 50%
+    0   = 0%
   */
 
   const pwm =
@@ -342,21 +321,10 @@ function App() {
 
       setSendingCommand(true);
 
-
       setCommandMessage(
         `Sending ${command}...`
       );
 
-
-      /*
-        IMPORTANT:
-
-        The ESP32 firmware reads ONLY:
-
-        devices/device001/control/mode
-
-        So all commands must be written here.
-      */
 
       const commandRef =
         ref(
@@ -398,7 +366,6 @@ function App() {
       setCommandMessage(
         "Failed to send command."
       );
-
 
     } finally {
 
@@ -989,29 +956,23 @@ function App() {
       />
 
 
-      <DryingStatus />
-
+      {/* =============================================
+          SENSOR CARDS
+      ============================================= */}
 
       <div
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(4, minmax(0, 1fr))",
+            "repeat(3, minmax(0, 1fr))",
           gap: "15px",
           marginBottom: "24px",
         }}
       >
 
         <SensorCard
-          title="Temperature Sensor 1"
-          value={temperature1}
-          unit="°C"
-        />
-
-
-        <SensorCard
-          title="Temperature Sensor 2"
-          value={temperature2}
+          title="Reactor Chamber Temperature"
+          value={reactorTemperature}
           unit="°C"
         />
 
@@ -1036,14 +997,10 @@ function App() {
       </div>
 
 
+      <DryingStatus />
+
+
       <ControlPanel />
-
-
-      <HighestTemperatureChart
-        history={
-          deviceData?.history || {}
-        }
-      />
 
     </>
 
@@ -1089,22 +1046,15 @@ function App() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(4, minmax(0, 1fr))",
+            "repeat(3, minmax(0, 1fr))",
           gap: "15px",
           marginBottom: "24px",
         }}
       >
 
         <SensorCard
-          title="Temperature Sensor 1"
-          value={temperature1}
-          unit="°C"
-        />
-
-
-        <SensorCard
-          title="Temperature Sensor 2"
-          value={temperature2}
+          title="Reactor Chamber Temperature"
+          value={reactorTemperature}
           unit="°C"
         />
 
@@ -1183,6 +1133,12 @@ function App() {
               ? "Online"
               : "Offline"
           }
+        />
+
+
+        <Setting
+          title="Reactor Chamber Temperature"
+          value={`${reactorTemperature} °C`}
         />
 
 
