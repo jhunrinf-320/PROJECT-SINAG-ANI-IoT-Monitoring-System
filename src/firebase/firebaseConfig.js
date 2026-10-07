@@ -5,6 +5,7 @@ import {
   onValue,
   set
 } from "firebase/database";
+
 import {
   getAuth,
   signInAnonymously,
@@ -14,7 +15,8 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyAcFpxULijePBCmRsZgw5FSWpUUY10XKAU",
   authDomain: "sinag-ani-iot.firebaseapp.com",
-  databaseURL: "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
+  databaseURL:
+    "https://sinag-ani-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "sinag-ani-iot",
   storageBucket: "sinag-ani-iot.firebasestorage.app",
   messagingSenderId: "505006165687",
@@ -22,11 +24,16 @@ const firebaseConfig = {
   measurementId: "G-F1YD6L3XNL"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Initialize Realtime Database
 const database = getDatabase(app);
+
+// Initialize Firebase Authentication
 const auth = getAuth(app);
 
+// Export Firebase services and functions
 export {
   app,
   database,
