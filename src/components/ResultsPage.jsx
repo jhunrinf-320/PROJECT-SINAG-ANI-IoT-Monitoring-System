@@ -1,426 +1,407 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import { ref, onValue, set } from "firebase/database";
 
-const DEFAULT_TRIALS = [
-  {
-    name: "Trial 1",
-    initialWeight: 100,
-    finalWeight: 68,
-    initialHumidity: 78,
-    finalHumidity: 58,
-    highestTemp: 38.11,
-    finalTemp: 36.12,
-    dryingTime: "5 hours",
-    weather: "Sunny",
-    observation: "Good drying performance."
-  },
-  {
-    name: "Trial 2",
-    initialWeight: 100,
-    finalWeight: 69,
-    initialHumidity: 79,
-    finalHumidity: 49,
-    highestTemp: 39.01,
-    finalTemp: 35.12,
-    dryingTime: "5 hours",
-    weather: "Sunny",
-    observation: "Good drying performance."
-  },
-  {
-    name: "Trial 3",
-    initialWeight: 100,
-    finalWeight: 75,
-    initialHumidity: 96,
-    finalHumidity: 85.12,
-    highestTemp: 30.11,
-    finalTemp: 27.12,
-    dryingTime: "5 hours",
-    weather: "Cloudy/Rainy",
-    observation: "Lower drying performance due to weather."
-  }
-];
+const DB_PATH = "devices/device001/researchResults";
 
-const DEFAULT_FUNCTIONALITY = [
-  { trial: "Trial 1", functional: 7, notFunctional: 2 },
-  { trial: "Trial 2", functional: 9, notFunctional: 0 },
-  { trial: "Trial 3", functional: 9, notFunctional: 0 }
-];
+const DEFAULT_DATA = {
+  manualTrials: [
+    { trial: "Trial 1", reduction: 32 },
+    { trial: "Trial 2", reduction: 31 },
+    { trial: "Trial 3", reduction: 25 },
+  ],
+  automaticTrials: [
+    { trial: "Trial 1", reduction: 34 },
+    { trial: "Trial 2", reduction: 32 },
+    { trial: "Trial 3", reduction: 30 },
+  ],
+  initialWeight: 100,
+  highestTemperature: 39.01,
+  pValue: 0.341,
+};
 
-export default function ResearchResults({ database }) {
-  const [trials, setTrials] = useState(DEFAULT_TRIALS);
-  const [functionality, setFunctionality] = useState(DEFAULT_FUNCTIONALITY);
-  const [notes, setNotes] = useState("");
-  const [saved, setSaved] = useState(false);
+const cardStyle = {
+  background: "#fff",
+  padding: "20px",
+  borderRadius: "12px",
+  marginBottom: "20px",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+};
+
+const inputStyle = {
+  width: "100%",
+  minWidth: "70px",
+  padding: "9px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "6px",
+  boxSizing: "border-box",
+  fontSize: "14px",
+};
+
+function average(trials) {
+  if (!trials.length) return 0;
+
+  return (
+    trials.reduce(
+      (sum, trial) => sum + (Number(trial.reduction) || 0),
+      0
+    ) / trials.length
+  );
+}
+
+function EditableValue({ editing, value, onChange, type = "number" }) {
+  if (!editing) return <>{value}</>;
+
+  return (
+    <input
+      style={inputStyle}
+      type={type}
+      step={type === "number" ? "any" : undefined}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+
+export default function ResearchSummary({ database }) {
+  const [data, setData] = useState(DEFAULT_DATA);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!database) return;
+    if (!database) {
+      setMessage("Firebase database is not connected.");
+      return;
+    }
 
-    const resultsRef = ref(database, "devices/device001/researchResults");
+    const resultsRef = ref(database, DB_PATH);
 
-    return onValue(resultsRef, (snapshot) => {
-      const data = snapshot.val();
+    const unsubscribe = onValue(
+      resultsRef,
+      (snapshot) => {
+        const saved = snapshot.val();
 
-      if (!data) return;
+        if (!saved) return;
 
-      if (data.trials) setTrials(data.trials);
-      if (data.functionality) setFunctionality(data.functionality);
-      if (data.notes) setNotes(data.notes);
-    });
+        setData({
+          ...DEFAULT_DATA,
+          ...saved,
+          manualTrials:
+            saved.manualTrials ?? DEFAULT_DATA.manualTrials,
+          automaticTrials:
+            saved.automaticTrials ?? DEFAULT_DATA.automaticTrials,
+        });
+
+        setMessage("");
+      },
+      (error) => {
+        console.error("Unable to load research results:", error);
+        setMessage("Unable to load results. Check Firebase permissions.");
+      }
+    );
+
+    return unsubscribe;
   }, [database]);
 
-  const calculations = useMemo(() => {
-    const reductions = trials.map((t) => {
-      const initial = Number(t.initialWeight) || 0;
-      const final = Number(t.finalWeight) || 0;
+  const manualAverage = useMemo(
+    () => average(data.manualTrials),
+    [data.manualTrials]
+  );
 
-      return initial > 0
-        ? ((initial - final) / initial) * 100
-        : 0;
-    });
+  const automaticAverage = useMemo(
+    () => average(data.automaticTrials),
+    [data.automaticTrials]
+  );
 
-    const highestTemps = trials.map((t) => Number(t.highestTemp) || 0);
-    const finalWeights = trials.map((t) => Number(t.finalWeight) || 0);
-
-    const totalFunctional = functionality.reduce(
-      (sum, t) => sum + Number(t.functional || 0),
-      0
-    );
-
-    const totalNotFunctional = functionality.reduce(
-      (sum, t) => sum + Number(t.notFunctional || 0),
-      0
-    );
-
-    return {
-      reductions,
-      averageReduction:
-        reductions.reduce((a, b) => a + b, 0) / reductions.length,
-
-      highestRecordedTemp: Math.max(...highestTemps),
-
-      averageHighestTemp:
-        highestTemps.reduce((a, b) => a + b, 0) / highestTemps.length,
-
-      averageFinalWeight:
-        finalWeights.reduce((a, b) => a + b, 0) / finalWeights.length,
-
-      overallFunctionality:
-        totalFunctional + totalNotFunctional > 0
-          ? (totalFunctional /
-              (totalFunctional + totalNotFunctional)) *
-            100
-          : 0
-    };
-  }, [trials, functionality]);
-
-  const updateTrial = (index, field, value) => {
-    setTrials((current) =>
-      current.map((trial, i) =>
-        i === index ? { ...trial, [field]: value } : trial
-      )
-    );
-    setSaved(false);
+  const updateTrial = (mode, index, value) => {
+    setData((current) => ({
+      ...current,
+      [mode]: current[mode].map((trial, i) =>
+        i === index ? { ...trial, reduction: value } : trial
+      ),
+    }));
+    setMessage("");
   };
 
-  const updateFunctionality = (index, field, value) => {
-    setFunctionality((current) =>
-      current.map((trial, i) =>
-        i === index ? { ...trial, [field]: value } : trial
-      )
-    );
-    setSaved(false);
+  const updateFinding = (field, value) => {
+    setData((current) => ({ ...current, [field]: value }));
+    setMessage("");
   };
 
   const saveResults = async () => {
+    if (!database) {
+      setMessage("Cannot save: Firebase database is not connected.");
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+
     try {
-      await set(ref(database, "devices/device001/researchResults"), {
-        trials,
-        functionality,
-        notes,
-        lastUpdated: new Date().toISOString()
+      await set(ref(database, DB_PATH), {
+        ...data,
+        lastUpdated: new Date().toISOString(),
       });
 
-      setSaved(true);
+      setEditing(false);
+      setMessage("Research results saved successfully.");
     } catch (error) {
-      console.error(error);
-      alert("Unable to save research results.");
+      console.error("Unable to save research results:", error);
+      setMessage("Save failed. Check your Firebase database rules.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const inputStyle = {
-    width: "100%",
-    padding: "8px",
-    border: "1px solid #ddd",
-    borderRadius: "6px",
-    boxSizing: "border-box"
-  };
-
-  const cardStyle = {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "12px",
-    marginBottom: "20px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.06)"
+  const cancelEditing = () => {
+    setEditing(false);
+    setMessage("");
+    // The Firebase listener restores the last saved values.
+    if (database) {
+      onValue(ref(database, DB_PATH), (snapshot) => {
+        if (snapshot.exists()) {
+          const saved = snapshot.val();
+          setData({
+            ...DEFAULT_DATA,
+            ...saved,
+            manualTrials:
+              saved.manualTrials ?? DEFAULT_DATA.manualTrials,
+            automaticTrials:
+              saved.automaticTrials ?? DEFAULT_DATA.automaticTrials,
+          });
+        } else {
+          setData(DEFAULT_DATA);
+        }
+      }, { onlyOnce: true });
+    }
   };
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1400px", margin: "auto" }}>
-      <h1>Research Results</h1>
-      <p style={{ color: "#666" }}>
-        Edit the raw trial data below. Calculated results update automatically.
-      </p>
+    <main style={{
+      maxWidth: "1100px",
+      margin: "0 auto",
+      padding: "24px",
+      color: "#1e293b",
+      fontFamily: "Arial, sans-serif",
+    }}>
+      <div style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        marginBottom: "24px",
+      }}>
+        <div>
+          <h1 style={{ margin: "0 0 8px" }}>Research Summary</h1>
+          <p style={{ margin: 0, color: "#64748b" }}>
+            SINAG-ANI experimental findings
+          </p>
+        </div>
 
-      {/* TRIAL DATA */}
-      <div style={cardStyle}>
-        <h2>Trial Results</h2>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {editing ? (
+            <>
+              <button
+                onClick={saveResults}
+                disabled={saving}
+                style={buttonStyle}
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+              <button
+                onClick={cancelEditing}
+                disabled={saving}
+                style={secondaryButtonStyle}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => {
+                setEditing(true);
+                setMessage("");
+              }}
+              style={buttonStyle}
+            >
+              Edit Results
+            </button>
+          )}
+        </div>
+      </div>
+
+      {message && (
+        <p role="status" style={{ color: "#475569" }}>
+          {message}
+        </p>
+      )}
+
+      {/* TABLE 1: WEIGHT REDUCTION RESULTS */}
+      <section style={cardStyle}>
+        <h2>1. Weight Reduction Results</h2>
 
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={tableStyle}>
             <thead>
               <tr>
-                {[
-                  "Trial",
-                  "Initial Weight",
-                  "Final Weight",
-                  "Initial Humidity",
-                  "Final Humidity",
-                  "Highest Temp",
-                  "Final Temp",
-                  "Drying Time",
-                  "Weather",
-                  "Weight Reduction"
-                ].map((heading) => (
-                  <th
-                    key={heading}
-                    style={{
-                      padding: "10px",
-                      borderBottom: "2px solid #ddd",
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    {heading}
-                  </th>
-                ))}
+                <th style={cellStyle}>Trial</th>
+                <th style={cellStyle}>Manual Mode (%)</th>
+                <th style={cellStyle}>Automatic Mode (%)</th>
               </tr>
             </thead>
 
             <tbody>
-              {trials.map((trial, index) => (
-                <tr key={trial.name}>
-                  <td style={{ padding: "8px" }}>{trial.name}</td>
+              {[0, 1, 2].map((index) => (
+                <tr key={index}>
+                  <td style={cellStyle}>
+                    {data.manualTrials[index]?.trial ??
+                      `Trial ${index + 1}`}
+                  </td>
 
-                  {[
-                    ["initialWeight", "number"],
-                    ["finalWeight", "number"],
-                    ["initialHumidity", "number"],
-                    ["finalHumidity", "number"],
-                    ["highestTemp", "number"],
-                    ["finalTemp", "number"]
-                  ].map(([field, type]) => (
-                    <td key={field} style={{ padding: "8px" }}>
-                      <input
-                        style={inputStyle}
-                        type={type}
-                        value={trial[field]}
-                        onChange={(e) =>
-                          updateTrial(index, field, e.target.value)
-                        }
-                      />
-                    </td>
-                  ))}
-
-                  <td style={{ padding: "8px" }}>
-                    <input
-                      style={inputStyle}
-                      value={trial.dryingTime}
-                      onChange={(e) =>
-                        updateTrial(index, "dryingTime", e.target.value)
+                  <td style={cellStyle}>
+                    <EditableValue
+                      editing={editing}
+                      value={data.manualTrials[index].reduction}
+                      onChange={(value) =>
+                        updateTrial("manualTrials", index, value)
                       }
                     />
                   </td>
 
-                  <td style={{ padding: "8px" }}>
-                    <input
-                      style={inputStyle}
-                      value={trial.weather}
-                      onChange={(e) =>
-                        updateTrial(index, "weather", e.target.value)
+                  <td style={cellStyle}>
+                    <EditableValue
+                      editing={editing}
+                      value={data.automaticTrials[index].reduction}
+                      onChange={(value) =>
+                        updateTrial("automaticTrials", index, value)
                       }
                     />
-                  </td>
-
-                  <td style={{ padding: "8px", fontWeight: "bold" }}>
-                    {calculations.reductions[index].toFixed(2)}%
                   </td>
                 </tr>
               ))}
+
+              <tr style={{ background: "#f1f5f9", fontWeight: "bold" }}>
+                <td style={cellStyle}>Average</td>
+                <td style={cellStyle}>{manualAverage.toFixed(2)}%</td>
+                <td style={cellStyle}>{automaticAverage.toFixed(2)}%</td>
+              </tr>
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
-      {/* AUTOMATIC SUMMARY */}
-      <div style={cardStyle}>
-        <h2>Automatic Summary</h2>
+      {/* TABLE 2: SUMMARY OF RESEARCH FINDINGS */}
+      <section style={cardStyle}>
+        <h2>2. Summary of Research Findings</h2>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-            gap: "15px"
-          }}
-        >
-          <Summary
-            title="Average Weight Reduction"
-            value={`${calculations.averageReduction.toFixed(2)}%`}
-          />
+        <div style={{ overflowX: "auto" }}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={cellStyle}>Parameter</th>
+                <th style={cellStyle}>Result</th>
+              </tr>
+            </thead>
 
-          <Summary
-            title="Highest Recorded Temperature"
-            value={`${calculations.highestRecordedTemp.toFixed(2)}°C`}
-          />
+            <tbody>
+              <tr>
+                <td style={cellStyle}>Initial Sample Weight</td>
+                <td style={cellStyle}>
+                  <EditableValue
+                    editing={editing}
+                    value={data.initialWeight}
+                    onChange={(value) =>
+                      updateFinding("initialWeight", value)
+                    }
+                    type="text"
+                  />
+                </td>
+              </tr>
 
-          <Summary
-            title="Average Highest Temperature"
-            value={`${calculations.averageHighestTemp.toFixed(2)}°C`}
-          />
+              <tr>
+                <td style={cellStyle}>
+                  Average Weight Reduction — Manual Mode
+                </td>
+                <td style={cellStyle}>{manualAverage.toFixed(2)}%</td>
+              </tr>
 
-          <Summary
-            title="Average Final Weight"
-            value={`${calculations.averageFinalWeight.toFixed(2)} g`}
-          />
+              <tr>
+                <td style={cellStyle}>
+                  Average Weight Reduction — Automatic Mode
+                </td>
+                <td style={cellStyle}>{automaticAverage.toFixed(2)}%</td>
+              </tr>
 
-          <Summary
-            title="Overall Functionality"
-            value={`${calculations.overallFunctionality.toFixed(2)}%`}
-          />
+              <tr>
+                <td style={cellStyle}>Highest Recorded Temperature</td>
+                <td style={cellStyle}>
+                  <EditableValue
+                    editing={editing}
+                    value={data.highestTemperature}
+                    onChange={(value) =>
+                      updateFinding("highestTemperature", value)
+                    }
+                  />
+                  {editing ? "" : "°C"}
+                </td>
+              </tr>
+
+              <tr>
+                <td style={cellStyle}>Statistical Significance (p-value)</td>
+                <td style={cellStyle}>
+                  <EditableValue
+                    editing={editing}
+                    value={data.pValue}
+                    onChange={(value) =>
+                      updateFinding("pValue", value)
+                    }
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
+      </section>
 
-      {/* FUNCTIONALITY */}
-      <div style={cardStyle}>
-        <h2>System Functionality</h2>
-
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th>Trial</th>
-              <th>Functional</th>
-              <th>Not Functional</th>
-              <th>Percentage</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {functionality.map((trial, index) => {
-              const total =
-                Number(trial.functional || 0) +
-                Number(trial.notFunctional || 0);
-
-              const percentage =
-                total > 0
-                  ? (Number(trial.functional || 0) / total) * 100
-                  : 0;
-
-              return (
-                <tr key={trial.trial}>
-                  <td>{trial.trial}</td>
-
-                  <td>
-                    <input
-                      style={inputStyle}
-                      type="number"
-                      value={trial.functional}
-                      onChange={(e) =>
-                        updateFunctionality(
-                          index,
-                          "functional",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      style={inputStyle}
-                      type="number"
-                      value={trial.notFunctional}
-                      onChange={(e) =>
-                        updateFunctionality(
-                          index,
-                          "notFunctional",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </td>
-
-                  <td>{percentage.toFixed(2)}%</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* NOTES */}
-      <div style={cardStyle}>
-        <h2>Observations / Notes</h2>
-
-        <textarea
-          value={notes}
-          onChange={(e) => {
-            setNotes(e.target.value);
-            setSaved(false);
-          }}
-          rows="5"
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            boxSizing: "border-box"
-          }}
-          placeholder="Enter research observations..."
-        />
-      </div>
-
-      <button
-        onClick={saveResults}
-        style={{
-          padding: "12px 24px",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontWeight: "bold"
-        }}
-      >
-        Save Research Results
-      </button>
-
-      {saved && (
-        <span style={{ marginLeft: "12px" }}>
-          ✓ Saved to Firebase
-        </span>
-      )}
-    </div>
+      <style>{`
+        @media (max-width: 600px) {
+          .research-summary-table th,
+          .research-summary-table td {
+            padding: 9px !important;
+            font-size: 13px;
+          }
+        }
+      `}</style>
+    </main>
   );
 }
 
-function Summary({ title, value }) {
-  return (
-    <div
-      style={{
-        padding: "18px",
-        borderRadius: "10px",
-        background: "#f5f7fa"
-      }}
-    >
-      <div style={{ fontSize: "13px", color: "#666" }}>{title}</div>
-      <div style={{ fontSize: "24px", fontWeight: "bold", marginTop: "6px" }}>
-        {value}
-      </div>
-    </div>
-  );
-}
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+  textAlign: "left",
+};
+
+const cellStyle = {
+  padding: "12px",
+  borderBottom: "1px solid #e2e8f0",
+  verticalAlign: "middle",
+};
+
+const buttonStyle = {
+  padding: "10px 16px",
+  border: "none",
+  borderRadius: "7px",
+  background: "#166534",
+  color: "#fff",
+  cursor: "pointer",
+  fontWeight: "bold",
+};
+
+const secondaryButtonStyle = {
+  ...buttonStyle,
+  background: "#e2e8f0",
+  color: "#1e293b",
+};
