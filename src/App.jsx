@@ -51,49 +51,49 @@ const TOTAL_TIME = INITIAL_TIME + MAIN_TIME + FINAL_TIME;
 /* =========================================================
    DEFAULT RESEARCH RESULTS
 ========================================================= */
-
 const DEFAULT_RESULTS = {
   trials: [
     {
       trial: "Trial 1",
       fruit: "Banana",
       initialWeight: 100,
+      manualWeightReduction: 32,
+      automaticWeightReduction: 34,
       finalWeight: 68,
-      initialHumidity: 78,
-      finalHumidity: 58,
-      highestTemperature: 38.11,
-      finalTemperature: 36.12,
+      initialHumidity: "",
+      finalHumidity: "",
+      highestTemperature: 39.01,
+      finalTemperature: "",
       dryingTime: 5,
-      weather: "Sunny",
-      observation:
-        "The system operated successfully under sunny conditions and achieved noticeable weight reduction.",
+      weather: "",
+      observation: "",
       stages: {
         initial: {
           startingWeight: 100,
-          endingWeight: 83,
-          humidity: 51.11,
-          highestTemperature: 37,
-          finalTemperature: 36,
+          endingWeight: "",
+          humidity: "",
+          highestTemperature: "",
+          finalTemperature: "",
           fanPower: 100,
-          observation: "Initial moisture was reduced during high fan operation.",
+          observation: "",
         },
         main: {
-          startingWeight: 83,
-          endingWeight: 76,
-          humidity: 50.98,
-          highestTemperature: 38,
-          finalTemperature: 35,
+          startingWeight: "",
+          endingWeight: "",
+          humidity: "",
+          highestTemperature: "",
+          finalTemperature: "",
           fanPower: 75,
-          observation: "The sample continued to lose moisture under moderate-high airflow.",
+          observation: "",
         },
         final: {
-          startingWeight: 76,
-          endingWeight: 69,
-          humidity: 49.11,
-          highestTemperature: 39,
-          finalTemperature: 36,
+          startingWeight: "",
+          endingWeight: "",
+          humidity: "",
+          highestTemperature: "",
+          finalTemperature: "",
           fanPower: 50,
-          observation: "Final drying further reduced the sample weight.",
+          observation: "",
         },
       },
     },
@@ -101,15 +101,16 @@ const DEFAULT_RESULTS = {
       trial: "Trial 2",
       fruit: "Banana",
       initialWeight: 100,
+      manualWeightReduction: 31,
+      automaticWeightReduction: 32,
       finalWeight: 69,
       initialHumidity: "",
       finalHumidity: "",
       highestTemperature: "",
       finalTemperature: "",
       dryingTime: 5,
-      weather: "Sunny",
-      observation:
-        "The system completed the drying cycle and produced a consistent reduction in sample weight.",
+      weather: "",
+      observation: "",
       stages: {
         initial: {
           startingWeight: "",
@@ -144,6 +145,8 @@ const DEFAULT_RESULTS = {
       trial: "Trial 3",
       fruit: "Banana",
       initialWeight: 100,
+      manualWeightReduction: 25,
+      automaticWeightReduction: 30,
       finalWeight: 75,
       initialHumidity: "",
       finalHumidity: "",
@@ -151,8 +154,7 @@ const DEFAULT_RESULTS = {
       finalTemperature: "",
       dryingTime: 5,
       weather: "Cloudy/Rainy",
-      observation:
-        "Cloudy and rainy conditions were observed, which may have contributed to lower drying performance.",
+      observation: "",
       stages: {
         initial: {
           startingWeight: "",
@@ -186,21 +188,9 @@ const DEFAULT_RESULTS = {
   ],
 
   functionality: [
-    {
-      trial: "Trial 1",
-      functional: 7,
-      notFunctional: 2,
-    },
-    {
-      trial: "Trial 2",
-      functional: 9,
-      notFunctional: 0,
-    },
-    {
-      trial: "Trial 3",
-      functional: 9,
-      notFunctional: 0,
-    },
+    { trial: "Trial 1", functional: 7, notFunctional: 2 },
+    { trial: "Trial 2", functional: 9, notFunctional: 0 },
+    { trial: "Trial 3", functional: 9, notFunctional: 0 },
   ],
 
   monitoring: {
@@ -211,8 +201,16 @@ const DEFAULT_RESULTS = {
     firebaseSynchronization: "Functional",
   },
 
+  summary: {
+    initialWeight: 100,
+    averageManualReduction: 29.33,
+    averageAutomaticReduction: 32.00,
+    highestTemperature: 39.01,
+    pValue: 0.341,
+  },
+
   notes:
-    "The system demonstrated successful monitoring and drying operation. Environmental conditions affected the drying performance.",
+    "Automatic mode had a higher average weight reduction than manual mode. The p-value was 0.341.",
 };
 
 /* =========================================================
@@ -759,144 +757,29 @@ function App() {
      RESEARCH RESULT CALCULATIONS
   ======================================================= */
 
-  const calculatedTrialResults = useMemo(() => {
-    return researchResults.trials.map(
-      (trial) => ({
-        ...trial,
-        weightReduction:
-          calculateWeightReduction(
-            trial.initialWeight,
-            trial.finalWeight
-          ),
-      })
-    );
-  }, [researchResults.trials]);
+ 
+  const weightResults = [
+    { trial: "Trial 1", manual: 32, automatic: 34 },
+    { trial: "Trial 2", manual: 31, automatic: 32 },
+    { trial: "Trial 3", manual: 25, automatic: 30 },
+  ];
 
-  const weightReductions =
-    calculatedTrialResults
-      .map(
-        (trial) =>
-          trial.weightReduction
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
+  const averageManualReduction =
+    weightResults.reduce((sum, trial) => sum + trial.manual, 0) /
+    weightResults.length;
 
-  const averageWeightReduction =
-    weightReductions.length > 0
-      ? weightReductions.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        weightReductions.length
-      : null;
+  const averageAutomaticReduction =
+    weightResults.reduce((sum, trial) => sum + trial.automatic, 0) /
+    weightResults.length;
 
-  const highestTrialTemperatures =
-    calculatedTrialResults
-      .map((trial) =>
-        toNumber(
-          trial.highestTemperature
-        )
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
+  const researchSummary = {
+    initialWeight: 100,
+    averageManualReduction,
+    averageAutomaticReduction,
+    highestTemperature: 39.01,
+    pValue: 0.341,
+  };
 
-  const maximumTrialTemperature =
-    highestTrialTemperatures.length > 0
-      ? Math.max(
-          ...highestTrialTemperatures
-        )
-      : null;
-
-  const averageHighestTemperature =
-    highestTrialTemperatures.length > 0
-      ? highestTrialTemperatures.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        highestTrialTemperatures.length
-      : null;
-
-  const finalWeights =
-    calculatedTrialResults
-      .map((trial) =>
-        toNumber(
-          trial.finalWeight
-        )
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
-
-  const averageFinalWeight =
-    finalWeights.length > 0
-      ? finalWeights.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        finalWeights.length
-      : null;
-
-  const totalDryingTime =
-    calculatedTrialResults
-      .map((trial) =>
-        toNumber(
-          trial.dryingTime
-        )
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
-
-  const averageDryingTime =
-    totalDryingTime.length > 0
-      ? totalDryingTime.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        totalDryingTime.length
-      : null;
-
-  const functionalitySummary =
-    researchResults.functionality.reduce(
-      (summary, item) => {
-        summary.functional +=
-          Number(
-            item.functional
-          ) || 0;
-
-        summary.notFunctional +=
-          Number(
-            item.notFunctional
-          ) || 0;
-
-        return summary;
-      },
-      {
-        functional: 0,
-        notFunctional: 0,
-      }
-    );
-
-  const totalFunctionality =
-    functionalitySummary.functional +
-    functionalitySummary.notFunctional;
-
-  const overallFunctionality =
-    totalFunctionality > 0
-      ? (functionalitySummary.functional /
-          totalFunctionality) *
-        100
-      : null;
 
   /* =======================================================
      EDIT RESEARCH DATA
