@@ -51,49 +51,49 @@ const TOTAL_TIME = INITIAL_TIME + MAIN_TIME + FINAL_TIME;
 /* =========================================================
    DEFAULT RESEARCH RESULTS
 ========================================================= */
+
 const DEFAULT_RESULTS = {
   trials: [
     {
       trial: "Trial 1",
       fruit: "Banana",
       initialWeight: 100,
-      manualWeightReduction: 32,
-      automaticWeightReduction: 34,
       finalWeight: 68,
-      initialHumidity: "",
-      finalHumidity: "",
-      highestTemperature: 39.01,
-      finalTemperature: "",
+      initialHumidity: 78,
+      finalHumidity: 58,
+      highestTemperature: 38.11,
+      finalTemperature: 36.12,
       dryingTime: 5,
-      weather: "",
-      observation: "",
+      weather: "Sunny",
+      observation:
+        "The system operated successfully under sunny conditions and achieved noticeable weight reduction.",
       stages: {
         initial: {
           startingWeight: 100,
-          endingWeight: "",
-          humidity: "",
-          highestTemperature: "",
-          finalTemperature: "",
+          endingWeight: 83,
+          humidity: 51.11,
+          highestTemperature: 37,
+          finalTemperature: 36,
           fanPower: 100,
-          observation: "",
+          observation: "Initial moisture was reduced during high fan operation.",
         },
         main: {
-          startingWeight: "",
-          endingWeight: "",
-          humidity: "",
-          highestTemperature: "",
-          finalTemperature: "",
+          startingWeight: 83,
+          endingWeight: 76,
+          humidity: 50.98,
+          highestTemperature: 38,
+          finalTemperature: 35,
           fanPower: 75,
-          observation: "",
+          observation: "The sample continued to lose moisture under moderate-high airflow.",
         },
         final: {
-          startingWeight: "",
-          endingWeight: "",
-          humidity: "",
-          highestTemperature: "",
-          finalTemperature: "",
+          startingWeight: 76,
+          endingWeight: 69,
+          humidity: 49.11,
+          highestTemperature: 39,
+          finalTemperature: 36,
           fanPower: 50,
-          observation: "",
+          observation: "Final drying further reduced the sample weight.",
         },
       },
     },
@@ -101,16 +101,15 @@ const DEFAULT_RESULTS = {
       trial: "Trial 2",
       fruit: "Banana",
       initialWeight: 100,
-      manualWeightReduction: 31,
-      automaticWeightReduction: 32,
       finalWeight: 69,
       initialHumidity: "",
       finalHumidity: "",
       highestTemperature: "",
       finalTemperature: "",
       dryingTime: 5,
-      weather: "",
-      observation: "",
+      weather: "Sunny",
+      observation:
+        "The system completed the drying cycle and produced a consistent reduction in sample weight.",
       stages: {
         initial: {
           startingWeight: "",
@@ -145,8 +144,6 @@ const DEFAULT_RESULTS = {
       trial: "Trial 3",
       fruit: "Banana",
       initialWeight: 100,
-      manualWeightReduction: 25,
-      automaticWeightReduction: 30,
       finalWeight: 75,
       initialHumidity: "",
       finalHumidity: "",
@@ -154,7 +151,8 @@ const DEFAULT_RESULTS = {
       finalTemperature: "",
       dryingTime: 5,
       weather: "Cloudy/Rainy",
-      observation: "",
+      observation:
+        "Cloudy and rainy conditions were observed, which may have contributed to lower drying performance.",
       stages: {
         initial: {
           startingWeight: "",
@@ -188,9 +186,21 @@ const DEFAULT_RESULTS = {
   ],
 
   functionality: [
-    { trial: "Trial 1", functional: 7, notFunctional: 2 },
-    { trial: "Trial 2", functional: 9, notFunctional: 0 },
-    { trial: "Trial 3", functional: 9, notFunctional: 0 },
+    {
+      trial: "Trial 1",
+      functional: 7,
+      notFunctional: 2,
+    },
+    {
+      trial: "Trial 2",
+      functional: 9,
+      notFunctional: 0,
+    },
+    {
+      trial: "Trial 3",
+      functional: 9,
+      notFunctional: 0,
+    },
   ],
 
   monitoring: {
@@ -201,16 +211,8 @@ const DEFAULT_RESULTS = {
     firebaseSynchronization: "Functional",
   },
 
-  summary: {
-    initialWeight: 100,
-    averageManualReduction: 29.33,
-    averageAutomaticReduction: 32.00,
-    highestTemperature: 39.01,
-    pValue: 0.341,
-  },
-
   notes:
-    "Automatic mode had a higher average weight reduction than manual mode. The p-value was 0.341.",
+    "The system demonstrated successful monitoring and drying operation. Environmental conditions affected the drying performance.",
 };
 
 /* =========================================================
@@ -757,29 +759,144 @@ function App() {
      RESEARCH RESULT CALCULATIONS
   ======================================================= */
 
- 
-  const weightResults = [
-    { trial: "Trial 1", manual: 32, automatic: 34 },
-    { trial: "Trial 2", manual: 31, automatic: 32 },
-    { trial: "Trial 3", manual: 25, automatic: 30 },
-  ];
+  const calculatedTrialResults = useMemo(() => {
+    return researchResults.trials.map(
+      (trial) => ({
+        ...trial,
+        weightReduction:
+          calculateWeightReduction(
+            trial.initialWeight,
+            trial.finalWeight
+          ),
+      })
+    );
+  }, [researchResults.trials]);
 
-  const averageManualReduction =
-    weightResults.reduce((sum, trial) => sum + trial.manual, 0) /
-    weightResults.length;
+  const weightReductions =
+    calculatedTrialResults
+      .map(
+        (trial) =>
+          trial.weightReduction
+      )
+      .filter(
+        (value) =>
+          value !== null
+      );
 
-  const averageAutomaticReduction =
-    weightResults.reduce((sum, trial) => sum + trial.automatic, 0) /
-    weightResults.length;
+  const averageWeightReduction =
+    weightReductions.length > 0
+      ? weightReductions.reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        ) /
+        weightReductions.length
+      : null;
 
-  const researchSummary = {
-    initialWeight: 100,
-    averageManualReduction,
-    averageAutomaticReduction,
-    highestTemperature: 39.01,
-    pValue: 0.341,
-  };
+  const highestTrialTemperatures =
+    calculatedTrialResults
+      .map((trial) =>
+        toNumber(
+          trial.highestTemperature
+        )
+      )
+      .filter(
+        (value) =>
+          value !== null
+      );
 
+  const maximumTrialTemperature =
+    highestTrialTemperatures.length > 0
+      ? Math.max(
+          ...highestTrialTemperatures
+        )
+      : null;
+
+  const averageHighestTemperature =
+    highestTrialTemperatures.length > 0
+      ? highestTrialTemperatures.reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        ) /
+        highestTrialTemperatures.length
+      : null;
+
+  const finalWeights =
+    calculatedTrialResults
+      .map((trial) =>
+        toNumber(
+          trial.finalWeight
+        )
+      )
+      .filter(
+        (value) =>
+          value !== null
+      );
+
+  const averageFinalWeight =
+    finalWeights.length > 0
+      ? finalWeights.reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        ) /
+        finalWeights.length
+      : null;
+
+  const totalDryingTime =
+    calculatedTrialResults
+      .map((trial) =>
+        toNumber(
+          trial.dryingTime
+        )
+      )
+      .filter(
+        (value) =>
+          value !== null
+      );
+
+  const averageDryingTime =
+    totalDryingTime.length > 0
+      ? totalDryingTime.reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        ) /
+        totalDryingTime.length
+      : null;
+
+  const functionalitySummary =
+    researchResults.functionality.reduce(
+      (summary, item) => {
+        summary.functional +=
+          Number(
+            item.functional
+          ) || 0;
+
+        summary.notFunctional +=
+          Number(
+            item.notFunctional
+          ) || 0;
+
+        return summary;
+      },
+      {
+        functional: 0,
+        notFunctional: 0,
+      }
+    );
+
+  const totalFunctionality =
+    functionalitySummary.functional +
+    functionalitySummary.notFunctional;
+
+  const overallFunctionality =
+    totalFunctionality > 0
+      ? (functionalitySummary.functional /
+          totalFunctionality) *
+        100
+      : null;
 
   /* =======================================================
      EDIT RESEARCH DATA
@@ -2148,1515 +2265,188 @@ function App() {
      RESULTS PAGE
   ======================================================= */
 
-  const ResultsPage = () => (
-    <>
-      <PageHeader
-        title="Research Results"
-        subtitle="Editable SINAG-ANI experimental results, functionality testing, and monitoring performance"
-      />
+  const ResultsPage = () => {
+    const tableHeaderStyle = {
+      textAlign: "left",
+      padding: "12px 14px",
+      background: "#f1f5f9",
+      borderBottom: "1px solid #e2e8f0",
+      color: "#475569",
+      fontSize: "12px",
+      fontWeight: "800",
+      whiteSpace: "nowrap",
+    };
 
-      {/* =================================================
-          RESULT TOOLBAR
-      ================================================= */}
+    const tableCellStyle = {
+      padding: "12px 14px",
+      borderBottom: "1px solid #f1f5f9",
+      fontSize: "13px",
+      color: "#1f2937",
+    };
 
-      <section
-        style={{
-          ...cardStyle,
-          padding: "18px 20px",
-          marginBottom: "14px",
-          display: "flex",
-          justifyContent:
-            "space-between",
-          alignItems: "center",
-          gap: "12px",
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
+    const weightReductionRows = [
+      { trial: "Trial 1", manual: 32, automatic: 34 },
+      { trial: "Trial 2", manual: 31, automatic: 32 },
+      { trial: "Trial 3", manual: 25, automatic: 30 },
+      { trial: "Average", manual: 29.33, automatic: 32.00 },
+    ];
+
+    const summaryRows = [
+      { parameter: "Initial sample weight", result: "100 g" },
+      {
+        parameter: "Average weight reduction — Manual Mode",
+        result: "29.33%",
+      },
+      {
+        parameter: "Average weight reduction — Automatic Mode",
+        result: "32.00%",
+      },
+      { parameter: "Highest recorded temperature", result: "39.01°C" },
+      { parameter: "Statistical significance (p-value)", result: "0.341" },
+    ];
+
+    return (
+      <>
+        <PageHeader
+          title="Research Results"
+          subtitle="Comparison of manual and automatic drying modes and summary of research findings"
+        />
+
+        {/* TABLE 1: WEIGHT REDUCTION RESULTS */}
+        <section
+          style={{
+            ...cardStyle,
+            padding: "24px",
+            marginBottom: "16px",
+            overflowX: "auto",
+          }}
+        >
           <div
             style={{
               fontSize: "11px",
               fontWeight: "800",
+              letterSpacing: "1px",
               color: "#64748b",
-              letterSpacing: "0.8px",
+              marginBottom: "5px",
             }}
           >
-            RESEARCH DATA
+            TABLE 1
           </div>
+          <h2 style={{ margin: "0 0 18px", fontSize: "20px" }}>
+            Weight Reduction Results
+          </h2>
 
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              minWidth: "480px",
+            }}
+          >
+            <thead>
+              <tr>
+                {["Trial", "Manual Mode (%)", "Automatic Mode (%)"].map(
+                  (header) => (
+                    <th key={header} style={tableHeaderStyle}>
+                      {header}
+                    </th>
+                  )
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {weightReductionRows.map((row) => {
+                const isAverage = row.trial === "Average";
+                return (
+                  <tr
+                    key={row.trial}
+                    style={{ background: isAverage ? "#f8fafc" : "#ffffff" }}
+                  >
+                    <td
+                      style={{
+                        ...tableCellStyle,
+                        fontWeight: isAverage ? "900" : "700",
+                      }}
+                    >
+                      {row.trial}
+                    </td>
+                    <td
+                      style={{
+                        ...tableCellStyle,
+                        fontWeight: isAverage ? "900" : "500",
+                      }}
+                    >
+                      {row.manual.toFixed(2).replace(/\.00$/, "")}%
+                    </td>
+                    <td
+                      style={{
+                        ...tableCellStyle,
+                        fontWeight: isAverage ? "900" : "500",
+                      }}
+                    >
+                      {row.automatic.toFixed(2).replace(/\.00$/, "")}%
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
+
+        {/* TABLE 2: SUMMARY OF RESEARCH FINDINGS */}
+        <section
+          style={{
+            ...cardStyle,
+            padding: "24px",
+            overflowX: "auto",
+          }}
+        >
           <div
             style={{
-              fontSize: "13px",
-              color: "#475569",
-              marginTop: "4px",
+              fontSize: "11px",
+              fontWeight: "800",
+              letterSpacing: "1px",
+              color: "#64748b",
+              marginBottom: "5px",
             }}
           >
-            {resultsLastUpdated
-              ? `Last updated: ${new Date(
-                  resultsLastUpdated
-                ).toLocaleString()}`
-              : "No saved update time"}
+            TABLE 2
           </div>
-        </div>
+          <h2 style={{ margin: "0 0 18px", fontSize: "20px" }}>
+            Summary of Research Findings
+          </h2>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            flexWrap: "wrap",
-          }}
-        >
-          {!editingResults ? (
-            <button
-              type="button"
-              onClick={
-                startEditingResults
-              }
-              style={{
-                border: 0,
-                borderRadius: "10px",
-                padding:
-                  "11px 16px",
-                background:
-                  "#111827",
-                color: "#ffffff",
-                fontWeight: "800",
-                cursor: "pointer",
-                fontSize: "12px",
-              }}
-            >
-              ✎ EDIT RESULTS
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={
-                  saveResearchResults
-                }
-                disabled={savingResults}
-                style={{
-                  border: 0,
-                  borderRadius: "10px",
-                  padding:
-                    "11px 16px",
-                  background:
-                    "#16a34a",
-                  color: "#ffffff",
-                  fontWeight: "800",
-                  cursor:
-                    savingResults
-                      ? "not-allowed"
-                      : "pointer",
-                  fontSize: "12px",
-                  opacity:
-                    savingResults
-                      ? 0.6
-                      : 1,
-                }}
-              >
-                {savingResults
-                  ? "SAVING..."
-                  : "✓ SAVE RESULTS"}
-              </button>
-
-              <button
-                type="button"
-                onClick={
-                  cancelEditingResults
-                }
-                style={{
-                  border:
-                    "1px solid #cbd5e1",
-                  borderRadius: "10px",
-                  padding:
-                    "11px 16px",
-                  background:
-                    "#ffffff",
-                  color: "#475569",
-                  fontWeight: "800",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                }}
-              >
-                CANCEL
-              </button>
-            </>
-          )}
-        </div>
-      </section>
-
-      {resultsMessage && (
-        <div
-          style={{
-            marginBottom: "14px",
-            padding: "13px 15px",
-            borderRadius: "12px",
-            background:
-              resultsMessage.includes(
-                "successfully"
-              )
-                ? "#dcfce7"
-                : "#f1f5f9",
-            color:
-              resultsMessage.includes(
-                "successfully"
-              )
-                ? "#166534"
-                : "#475569",
-            fontSize: "12px",
-            fontWeight: "700",
-          }}
-        >
-          {resultsMessage}
-        </div>
-      )}
-
-      {/* =================================================
-          SUMMARY
-      ================================================= */}
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(5, minmax(0, 1fr))",
-          gap: "12px",
-          marginBottom: "14px",
-        }}
-      >
-        <ResultSummaryCard
-          title="AVERAGE WEIGHT REDUCTION"
-          value={formatPercentage(
-            averageWeightReduction
-          )}
-          subtitle="Trials 1–3"
-        />
-
-        <ResultSummaryCard
-          title="HIGHEST RECORDED TEMP"
-          value={
-            maximumTrialTemperature !== null
-              ? `${maximumTrialTemperature.toFixed(
-                  2
-                )}°C`
-              : "--"
-          }
-          subtitle="Research trials"
-        />
-
-        <ResultSummaryCard
-          title="AVERAGE HIGHEST TEMP"
-          value={
-            averageHighestTemperature !== null
-              ? `${averageHighestTemperature.toFixed(
-                  2
-                )}°C`
-              : "--"
-          }
-          subtitle="Research trials"
-        />
-
-        <ResultSummaryCard
-          title="AVERAGE FINAL WEIGHT"
-          value={
-            averageFinalWeight !== null
-              ? `${averageFinalWeight.toFixed(
-                  2
-                )} g`
-              : "--"
-          }
-          subtitle="After drying"
-        />
-
-        <ResultSummaryCard
-          title="OVERALL FUNCTIONALITY"
-          value={formatPercentage(
-            overallFunctionality
-          )}
-          subtitle="System testing"
-        />
-      </div>
-
-      {/* =================================================
-          TRIAL RESULTS
-      ================================================= */}
-
-      <section
-        style={{
-          ...cardStyle,
-          padding: "24px",
-          marginBottom: "14px",
-          overflowX: "auto",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontWeight: "800",
-            letterSpacing: "1px",
-            color: "#64748b",
-          }}
-        >
-          EXPERIMENTAL DATA
-        </div>
-
-        <h2
-          style={{
-            margin: "5px 0 18px",
-            fontSize: "20px",
-          }}
-        >
-          Trial Results
-        </h2>
-
-        <table
-          style={{
-            width: "100%",
-            borderCollapse:
-              "collapse",
-            minWidth: "1050px",
-          }}
-        >
-          <thead>
-            <tr>
-              {[
-                "Trial",
-                "Fruit",
-                "Initial Weight",
-                "Final Weight",
-                "Weight Reduction",
-                "Initial Humidity",
-                "Final Humidity",
-                "Highest Temp",
-                "Final Temp",
-                "Drying Time",
-                "Weather",
-              ].map((header) => (
-                <th
-                  key={header}
-                  style={{
-                    textAlign: "left",
-                    padding: "10px",
-                    background:
-                      "#f8fafc",
-                    borderBottom:
-                      "1px solid #e2e8f0",
-                    fontSize: "10px",
-                    color: "#64748b",
-                    whiteSpace:
-                      "nowrap",
-                  }}
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {calculatedTrialResults.map(
-              (trial, index) => (
-                <tr key={index}>
-                  <td
-                    style={{
-                      padding: "10px",
-                      borderBottom:
-                        "1px solid #f1f5f9",
-                      fontWeight: "800",
-                      fontSize: "12px",
-                    }}
-                  >
-                    {trial.trial}
-                  </td>
-
-                  <td
-                    style={{
-                      padding: "10px",
-                      borderBottom:
-                        "1px solid #f1f5f9",
-                    }}
-                  >
-                    {editingResults ? (
-                      <input
-                        style={inputStyle}
-                        value={
-                          trial.fruit
-                        }
-                        onChange={(e) =>
-                          updateTrialField(
-                            index,
-                            "fruit",
-                            e.target.value
-                          )
-                        }
-                      />
-                    ) : (
-                      trial.fruit
-                    )}
-                  </td>
-
-                  {[
-                    [
-                      "initialWeight",
-                      "number",
-                    ],
-                    [
-                      "finalWeight",
-                      "number",
-                    ],
-                  ].map(
-                    ([field, type]) => (
-                      <td
-                        key={field}
-                        style={{
-                          padding: "10px",
-                          borderBottom:
-                            "1px solid #f1f5f9",
-                        }}
-                      >
-                        {editingResults ? (
-                          <input
-                            type={type}
-                            style={{
-                              ...inputStyle,
-                              minWidth:
-                                "90px",
-                            }}
-                            value={
-                              trial[
-                                field
-                              ] ?? ""
-                            }
-                            onChange={(e) =>
-                              updateTrialField(
-                                index,
-                                field,
-                                e.target
-                                  .value
-                              )
-                            }
-                          />
-                        ) : (
-                          `${trial[field] ?? "--"} g`
-                        )}
-                      </td>
-                    )
-                  )}
-
-                  <td
-                    style={{
-                      padding: "10px",
-                      borderBottom:
-                        "1px solid #f1f5f9",
-                      fontWeight: "900",
-                      color: "#111827",
-                    }}
-                  >
-                    {formatPercentage(
-                      trial.weightReduction
-                    )}
-                  </td>
-
-                  {[
-                    "initialHumidity",
-                    "finalHumidity",
-                    "highestTemperature",
-                    "finalTemperature",
-                    "dryingTime",
-                  ].map(
-                    (field) => (
-                      <td
-                        key={field}
-                        style={{
-                          padding: "10px",
-                          borderBottom:
-                            "1px solid #f1f5f9",
-                        }}
-                      >
-                        {editingResults ? (
-                          <input
-                            type="number"
-                            step="0.01"
-                            style={{
-                              ...inputStyle,
-                              minWidth:
-                                "85px",
-                            }}
-                            value={
-                              trial[
-                                field
-                              ] ?? ""
-                            }
-                            onChange={(e) =>
-                              updateTrialField(
-                                index,
-                                field,
-                                e.target
-                                  .value
-                              )
-                            }
-                          />
-                        ) : (
-                          field ===
-                          "dryingTime"
-                            ? `${trial[field] ?? "--"} h`
-                            : `${trial[field] ?? "--"}`
-                        )}
-                      </td>
-                    )
-                  )}
-
-                  <td
-                    style={{
-                      padding: "10px",
-                      borderBottom:
-                        "1px solid #f1f5f9",
-                    }}
-                  >
-                    {editingResults ? (
-                      <select
-                        value={
-                          trial.weather ??
-                          ""
-                        }
-                        onChange={(e) =>
-                          updateTrialField(
-                            index,
-                            "weather",
-                            e.target.value
-                          )
-                        }
-                        style={inputStyle}
-                      >
-                        <option value="Sunny">
-                          Sunny
-                        </option>
-                        <option value="Cloudy">
-                          Cloudy
-                        </option>
-                        <option value="Rainy">
-                          Rainy
-                        </option>
-                        <option value="Cloudy/Rainy">
-                          Cloudy/Rainy
-                        </option>
-                      </select>
-                    ) : (
-                      trial.weather ||
-                      "--"
-                    )}
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              minWidth: "420px",
+            }}
+          >
+            <thead>
+              <tr>
+                {["Parameter", "Result"].map((header) => (
+                  <th key={header} style={tableHeaderStyle}>
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {summaryRows.map((row) => (
+                <tr key={row.parameter}>
+                  <td style={tableCellStyle}>{row.parameter}</td>
+                  <td style={{ ...tableCellStyle, fontWeight: "800" }}>
+                    {row.result}
                   </td>
                 </tr>
-              )
-            )}
-          </tbody>
-        </table>
-      </section>
-
-      {/* =================================================
-          OBSERVATIONS
-      ================================================= */}
-
-      <section
-        style={{
-          ...cardStyle,
-          padding: "24px",
-          marginBottom: "14px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontWeight: "800",
-            letterSpacing: "1px",
-            color: "#64748b",
-          }}
-        >
-          TRIAL OBSERVATIONS
-        </div>
-
-        <h2
-          style={{
-            margin: "5px 0 18px",
-            fontSize: "20px",
-          }}
-        >
-          Observations
-        </h2>
-
-        <div
-          style={{
-            display: "grid",
-            gap: "12px",
-          }}
-        >
-          {researchResults.trials.map(
-            (trial, index) => (
-              <div
-                key={index}
-                style={{
-                  background: "#f8fafc",
-                  borderRadius: "12px",
-                  padding: "15px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "900",
-                    marginBottom: "7px",
-                  }}
-                >
-                  {trial.trial}
-                </div>
-
-                {editingResults ? (
-                  <textarea
-                    value={
-                      trial.observation ||
-                      ""
-                    }
-                    onChange={(e) =>
-                      updateTrialField(
-                        index,
-                        "observation",
-                        e.target.value
-                      )
-                    }
-                    rows={3}
-                    style={{
-                      ...inputStyle,
-                      resize: "vertical",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      lineHeight: 1.6,
-                      color: "#475569",
-                    }}
-                  >
-                    {trial.observation ||
-                      "No observation recorded."}
-                  </div>
-                )}
-              </div>
-            )
-          )}
-        </div>
-      </section>
-
-      {/* =================================================
-          STAGE RESULTS
-      ================================================= */}
-
-      <section
-        style={{
-          ...cardStyle,
-          padding: "24px",
-          marginBottom: "14px",
-          overflowX: "auto",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontWeight: "800",
-            letterSpacing: "1px",
-            color: "#64748b",
-          }}
-        >
-          STAGE-BY-STAGE RESULTS
-        </div>
-
-        <h2
-          style={{
-            margin: "5px 0 18px",
-            fontSize: "20px",
-          }}
-        >
-          Drying Stage Data
-        </h2>
-
-        {researchResults.trials.map(
-          (trial, trialIndex) => (
-            <div
-              key={trialIndex}
-              style={{
-                marginBottom: "22px",
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: "14px",
-                  margin:
-                    "0 0 10px",
-                }}
-              >
-                {trial.trial} —{" "}
-                {trial.fruit}
-              </h3>
-
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse:
-                    "collapse",
-                  minWidth: "850px",
-                }}
-              >
-                <thead>
-                  <tr>
-                    {[
-                      "Stage",
-                      "Starting Weight",
-                      "Ending Weight",
-                      "Humidity",
-                      "Highest Temp",
-                      "Final Temp",
-                      "Fan Power",
-                      "Observation",
-                    ].map(
-                      (header) => (
-                        <th
-                          key={header}
-                          style={{
-                            padding: "9px",
-                            textAlign:
-                              "left",
-                            background:
-                              "#f8fafc",
-                            fontSize:
-                              "10px",
-                            color:
-                              "#64748b",
-                            borderBottom:
-                              "1px solid #e2e8f0",
-                          }}
-                        >
-                          {header}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {[
-                    [
-                      "initial",
-                      "Initial",
-                    ],
-                    [
-                      "main",
-                      "Main",
-                    ],
-                    [
-                      "final",
-                      "Final",
-                    ],
-                  ].map(
-                    ([stageName, stageLabel]) => {
-                      const stageData =
-                        trial.stages?.[
-                          stageName
-                        ] || {};
-
-                      return (
-                        <tr
-                          key={stageName}
-                        >
-                          <td
-                            style={{
-                              padding:
-                                "9px",
-                              fontWeight:
-                                "800",
-                              fontSize:
-                                "11px",
-                              borderBottom:
-                                "1px solid #f1f5f9",
-                            }}
-                          >
-                            {stageLabel}
-                          </td>
-
-                          {[
-                            "startingWeight",
-                            "endingWeight",
-                            "humidity",
-                            "highestTemperature",
-                            "finalTemperature",
-                            "fanPower",
-                          ].map(
-                            (field) => (
-                              <td
-                                key={field}
-                                style={{
-                                  padding:
-                                    "9px",
-                                  borderBottom:
-                                    "1px solid #f1f5f9",
-                                }}
-                              >
-                                {editingResults ? (
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={
-                                      stageData[
-                                        field
-                                      ] ?? ""
-                                    }
-                                    onChange={(
-                                      e
-                                    ) =>
-                                      updateStageField(
-                                        trialIndex,
-                                        stageName,
-                                        field,
-                                        e
-                                          .target
-                                          .value
-                                      )
-                                    }
-                                    style={{
-                                      ...inputStyle,
-                                      minWidth:
-                                        "80px",
-                                    }}
-                                  />
-                                ) : (
-                                  stageData[
-                                    field
-                                  ] ??
-                                  "--"
-                                )}
-                              </td>
-                            )
-                          )}
-
-                          <td
-                            style={{
-                              padding:
-                                "9px",
-                              borderBottom:
-                                "1px solid #f1f5f9",
-                              minWidth:
-                                "220px",
-                            }}
-                          >
-                            {editingResults ? (
-                              <textarea
-                                rows={2}
-                                value={
-                                  stageData.observation ||
-                                  ""
-                                }
-                                onChange={(
-                                  e
-                                ) =>
-                                  updateStageField(
-                                    trialIndex,
-                                    stageName,
-                                    "observation",
-                                    e
-                                      .target
-                                      .value
-                                  )
-                                }
-                                style={{
-                                  ...inputStyle,
-                                  resize:
-                                    "vertical",
-                                }}
-                              />
-                            ) : (
-                              <span
-                                style={{
-                                  fontSize:
-                                    "11px",
-                                  color:
-                                    "#475569",
-                                }}
-                              >
-                                {stageData.observation ||
-                                  "--"}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    }
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
-      </section>
-
-      {/* =================================================
-          FUNCTIONALITY TEST
-      ================================================= */}
-
-      <section
-        style={{
-          ...cardStyle,
-          padding: "24px",
-          marginBottom: "14px",
-          overflowX: "auto",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontWeight: "800",
-            letterSpacing: "1px",
-            color: "#64748b",
-          }}
-        >
-          SYSTEM FUNCTIONALITY
-        </div>
-
-        <h2
-          style={{
-            margin: "5px 0 18px",
-            fontSize: "20px",
-          }}
-        >
-          Functionality Test
-        </h2>
-
-        <table
-          style={{
-            width: "100%",
-            borderCollapse:
-              "collapse",
-            minWidth: "600px",
-          }}
-        >
-          <thead>
-            <tr>
-              {[
-                "Trial",
-                "Functional",
-                "Not Functional",
-                "Functionality Rate",
-              ].map((header) => (
-                <th
-                  key={header}
-                  style={{
-                    textAlign: "left",
-                    padding: "10px",
-                    background:
-                      "#f8fafc",
-                    borderBottom:
-                      "1px solid #e2e8f0",
-                    fontSize: "10px",
-                    color: "#64748b",
-                  }}
-                >
-                  {header}
-                </th>
               ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {researchResults.functionality.map(
-              (item, index) => {
-                const total =
-                  (Number(
-                    item.functional
-                  ) || 0) +
-                  (Number(
-                    item.notFunctional
-                  ) || 0);
-
-                const rate =
-                  total > 0
-                    ? (Number(
-                        item.functional
-                      ) /
-                        total) *
-                      100
-                    : null;
-
-                return (
-                  <tr key={index}>
-                    <td
-                      style={{
-                        padding: "10px",
-                        borderBottom:
-                          "1px solid #f1f5f9",
-                        fontWeight: "800",
-                      }}
-                    >
-                      {item.trial}
-                    </td>
-
-                    {[
-                      "functional",
-                      "notFunctional",
-                    ].map(
-                      (field) => (
-                        <td
-                          key={field}
-                          style={{
-                            padding: "10px",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                          }}
-                        >
-                          {editingResults ? (
-                            <input
-                              type="number"
-                              min="0"
-                              style={{
-                                ...inputStyle,
-                                maxWidth:
-                                  "110px",
-                              }}
-                              value={
-                                item[
-                                  field
-                                ] ?? ""
-                              }
-                              onChange={(e) =>
-                                updateFunctionalityField(
-                                  index,
-                                  field,
-                                  e
-                                    .target
-                                    .value
-                                )
-                              }
-                            />
-                          ) : (
-                            item[field]
-                          )}
-                        </td>
-                      )
-                    )}
-
-                    <td
-                      style={{
-                        padding: "10px",
-                        borderBottom:
-                          "1px solid #f1f5f9",
-                        fontWeight: "900",
-                      }}
-                    >
-                      {formatPercentage(
-                        rate
-                      )}
-                    </td>
-                  </tr>
-                );
-              }
-            )}
-
-            <tr>
-              <td
-                style={{
-                  padding: "12px 10px",
-                  fontWeight: "900",
-                }}
-              >
-                OVERALL
-              </td>
-
-              <td
-                style={{
-                  padding: "12px 10px",
-                  fontWeight: "900",
-                }}
-              >
-                {
-                  functionalitySummary.functional
-                }
-              </td>
-
-              <td
-                style={{
-                  padding: "12px 10px",
-                  fontWeight: "900",
-                }}
-              >
-                {
-                  functionalitySummary.notFunctional
-                }
-              </td>
-
-              <td
-                style={{
-                  padding: "12px 10px",
-                  fontWeight: "900",
-                }}
-              >
-                {formatPercentage(
-                  overallFunctionality
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      {/* =================================================
-          MONITORING CAPABILITY
-      ================================================= */}
-
-      <section
-        style={{
-          ...cardStyle,
-          padding: "24px",
-          marginBottom: "14px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontWeight: "800",
-            letterSpacing: "1px",
-            color: "#64748b",
-          }}
-        >
-          MONITORING CAPABILITY
-        </div>
-
-        <h2
-          style={{
-            margin: "5px 0 18px",
-            fontSize: "20px",
-          }}
-        >
-          IoT Monitoring Functions
-        </h2>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(2, minmax(0, 1fr))",
-            gap: "10px",
-          }}
-        >
-          {[
-            [
-              "temperature",
-              "Temperature Monitoring",
-            ],
-            [
-              "humidity",
-              "Humidity Monitoring",
-            ],
-            [
-              "deviceStatus",
-              "Device Status Monitoring",
-            ],
-            [
-              "webDashboard",
-              "Web Dashboard",
-            ],
-            [
-              "firebaseSynchronization",
-              "Firebase Data Synchronization",
-            ],
-          ].map(
-            ([field, label]) => (
-              <div
-                key={field}
-                style={{
-                  background:
-                    "#f8fafc",
-                  borderRadius:
-                    "12px",
-                  padding: "14px",
-                  display: "flex",
-                  justifyContent:
-                    "space-between",
-                  alignItems:
-                    "center",
-                  gap: "10px",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "700",
-                    color: "#334155",
-                  }}
-                >
-                  {label}
-                </span>
-
-                {editingResults ? (
-                  <select
-                    value={
-                      researchResults
-                        .monitoring[
-                        field
-                      ] || ""
-                    }
-                    onChange={(e) =>
-                      updateMonitoringField(
-                        field,
-                        e.target
-                          .value
-                      )
-                    }
-                    style={{
-                      ...inputStyle,
-                      width: "145px",
-                    }}
-                  >
-                    <option value="Functional">
-                      Functional
-                    </option>
-
-                    <option value="Not Functional">
-                      Not Functional
-                    </option>
-                  </select>
-                ) : (
-                  <strong
-                    style={{
-                      fontSize: "11px",
-                      color:
-                        researchResults
-                          .monitoring[
-                          field
-                        ] ===
-                        "Functional"
-                          ? "#15803d"
-                          : "#dc2626",
-                    }}
-                  >
-                    {researchResults
-                      .monitoring[
-                      field
-                    ] || "--"}
-                  </strong>
-                )}
-              </div>
-            )
-          )}
-        </div>
-
-        <div
-          style={{
-            marginTop: "14px",
-            padding: "16px",
-            borderRadius: "12px",
-            background: "#ecfdf5",
-            color: "#166534",
-            fontSize: "13px",
-            fontWeight: "900",
-          }}
-        >
-          Overall Monitoring Capability: 100%
-        </div>
-      </section>
-
-      {/* =================================================
-          RESEARCH NOTES
-      ================================================= */}
-
-      <section
-        style={{
-          ...cardStyle,
-          padding: "24px",
-          marginBottom: "14px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontWeight: "800",
-            letterSpacing: "1px",
-            color: "#64748b",
-          }}
-        >
-          RESEARCH NOTES
-        </div>
-
-        <h2
-          style={{
-            margin: "5px 0 15px",
-            fontSize: "20px",
-          }}
-        >
-          Overall Notes
-        </h2>
-
-        {editingResults ? (
-          <textarea
-            rows={5}
-            value={
-              researchResults.notes ||
-              ""
-            }
-            onChange={(e) =>
-              setResearchResults(
-                (previous) => ({
-                  ...previous,
-                  notes: e.target
-                    .value,
-                })
-              )
-            }
-            style={{
-              ...inputStyle,
-              resize: "vertical",
-              lineHeight: 1.5,
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              padding: "16px",
-              background: "#f8fafc",
-              borderRadius: "12px",
-              color: "#475569",
-              fontSize: "12px",
-              lineHeight: 1.7,
-            }}
-          >
-            {researchResults.notes ||
-              "No research notes recorded."}
-          </div>
-        )}
-      </section>
-
-      {/* =================================================
-          RESULT CHARTS
-      ================================================= */}
-
-      <section
-        style={{
-          ...cardStyle,
-          padding: "24px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontWeight: "800",
-            letterSpacing: "1px",
-            color: "#64748b",
-          }}
-        >
-          RESULTS OVERVIEW
-        </div>
-
-        <h2
-          style={{
-            margin: "5px 0 18px",
-            fontSize: "20px",
-          }}
-        >
-          Trial Comparison
-        </h2>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(2, minmax(0, 1fr))",
-            gap: "14px",
-          }}
-        >
-          {/* WEIGHT REDUCTION CHART */}
-          <div
-            style={{
-              background: "#f8fafc",
-              borderRadius: "14px",
-              padding: "18px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: "800",
-                color: "#64748b",
-                marginBottom: "15px",
-              }}
-            >
-              WEIGHT REDUCTION
-            </div>
-
-            {calculatedTrialResults.map(
-              (trial, index) => {
-                const value =
-                  trial.weightReduction ||
-                  0;
-
-                return (
-                  <div
-                    key={index}
-                    style={{
-                      marginBottom: "14px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent:
-                          "space-between",
-                        marginBottom: "5px",
-                        fontSize: "11px",
-                        fontWeight: "800",
-                      }}
-                    >
-                      <span>
-                        {trial.trial}
-                      </span>
-
-                      <span>
-                        {formatPercentage(
-                          trial.weightReduction
-                        )}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        height: "10px",
-                        borderRadius:
-                          "999px",
-                        background:
-                          "#e2e8f0",
-                        overflow:
-                          "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${Math.min(
-                            Math.max(
-                              value,
-                              0
-                            ),
-                            100
-                          )}%`,
-                          height: "100%",
-                          background:
-                            "#111827",
-                          borderRadius:
-                            "999px",
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-            )}
-          </div>
-
-          {/* TEMPERATURE CHART */}
-          <div
-            style={{
-              background: "#f8fafc",
-              borderRadius: "14px",
-              padding: "18px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: "800",
-                color: "#64748b",
-                marginBottom: "15px",
-              }}
-            >
-              HIGHEST TEMPERATURE
-            </div>
-
-            {calculatedTrialResults.map(
-              (trial, index) => {
-                const value =
-                  toNumber(
-                    trial.highestTemperature
-                  );
-
-                const percent =
-                  value !== null
-                    ? Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          (value /
-                            50) *
-                            100
-                        )
-                      )
-                    : 0;
-
-                return (
-                  <div
-                    key={index}
-                    style={{
-                      marginBottom: "14px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent:
-                          "space-between",
-                        marginBottom: "5px",
-                        fontSize: "11px",
-                        fontWeight: "800",
-                      }}
-                    >
-                      <span>
-                        {trial.trial}
-                      </span>
-
-                      <span>
-                        {value !== null
-                          ? `${value.toFixed(
-                              2
-                            )}°C`
-                          : "--"}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        height: "10px",
-                        borderRadius:
-                          "999px",
-                        background:
-                          "#e2e8f0",
-                        overflow:
-                          "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${percent}%`,
-                          height: "100%",
-                          background:
-                            "#475569",
-                          borderRadius:
-                            "999px",
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-            )}
-          </div>
-        </div>
-      </section>
-    </>
-  );
+            </tbody>
+          </table>
+        </section>
+      </>
+    );
+  };
 
   /* =======================================================
      SETTINGS
