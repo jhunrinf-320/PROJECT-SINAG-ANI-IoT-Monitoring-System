@@ -2151,13 +2151,8 @@ function App() {
   const ResultsPage = () => {
     const manualResults = [32, 31, 25];
     const automaticResults = [34, 32, 30];
-
-    const averageManual =
-      manualResults.reduce((sum, value) => sum + value, 0) /
-      manualResults.length;
-    const averageAutomatic =
-      automaticResults.reduce((sum, value) => sum + value, 0) /
-      automaticResults.length;
+    const averageManual = manualResults.reduce((sum, value) => sum + value, 0) / manualResults.length;
+    const averageAutomatic = automaticResults.reduce((sum, value) => sum + value, 0) / automaticResults.length;
 
     const weightReductionRows = [
       { trial: "Trial 1", manual: 32, automatic: 34 },
@@ -2191,176 +2186,101 @@ function App() {
 
     const summaryRows = [
       { parameter: "Initial sample weight", result: "100 g" },
-      {
-        parameter: "Average weight reduction — Manual Mode",
-        result: `${averageManual.toFixed(2)}%`,
-      },
-      {
-        parameter: "Average weight reduction — Automatic Mode",
-        result: `${averageAutomatic.toFixed(2)}%`,
-      },
+      { parameter: "Average weight reduction — Manual Mode", result: `${averageManual.toFixed(2)}%` },
+      { parameter: "Average weight reduction — Automatic Mode", result: `${averageAutomatic.toFixed(2)}%` },
       { parameter: "Highest recorded temperature", result: "39.01°C" },
-      { parameter: "Statistical significance (p-value)", result: "0.341" },
+      { parameter: "Relative humidity analysis", result: "Significant difference by drying stage (p = 0.003)" },
     ];
 
-    const tableStyle = {
-      width: "100%",
-      borderCollapse: "collapse",
-      textAlign: "left",
-    };
-    const headerStyle = {
-      padding: "14px 16px",
-      background: "#f1f5f9",
-      color: "#475569",
-      borderBottom: "1px solid #e2e8f0",
-      fontSize: "12px",
-      fontWeight: "800",
-      whiteSpace: "nowrap",
-    };
-    const cellStyle = {
-      padding: "14px 16px",
-      borderBottom: "1px solid #e2e8f0",
-      color: "#334155",
-      fontSize: "13px",
-    };
+    const tableStyle = { width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "620px" };
+    const headerStyle = { padding: "12px 14px", background: "#f1f5f9", color: "#475569", borderBottom: "1px solid #e2e8f0", fontSize: "12px", fontWeight: "800", whiteSpace: "nowrap" };
+    const cellStyle = { padding: "12px 14px", borderBottom: "1px solid #e2e8f0", color: "#334155", fontSize: "13px" };
+    const sectionStyle = { ...cardStyle, padding: "22px", marginBottom: "18px", overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "16px" };
+    const headingStyle = { margin: "0 0 16px", fontSize: "17px", fontWeight: "900", color: "#111827" };
+
+    const renderTemperatureTable = (rows) => (
+      <table style={tableStyle}>
+        <thead><tr>
+          <th style={headerStyle}>Trial</th><th style={headerStyle}>Stage</th>
+          <th style={headerStyle}>Temperature After (°C)</th><th style={headerStyle}>Highest Temperature (°C)</th>
+          <th style={headerStyle}>Relative Humidity (%)</th>
+        </tr></thead>
+        <tbody>{rows.map((row) => (
+          <tr key={`${row.trial}-${row.stage}`}>
+            <td style={cellStyle}>{row.trial}</td><td style={cellStyle}>{row.stage}</td>
+            <td style={cellStyle}>{row.after.toFixed(2)}</td><td style={cellStyle}>{row.highest.toFixed(2)}</td>
+            <td style={cellStyle}>{row.humidity.toFixed(2)}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+    );
 
     return (
       <>
-        <PageHeader
-          title="Research Results"
-          subtitle="Comparison of manual and automatic drying modes and summary of findings"
-        />
+        <PageHeader title="Research Results" subtitle="Experimental results and performance evaluation of the SINAG-ANI solar fruit drying system" />
 
-        <section
-          style={{
-            ...cardStyle,
-            padding: "24px",
-            marginBottom: "18px",
-            overflowX: "auto",
-          }}
-        >
-          <h2
-            style={{
-              margin: "0 0 18px",
-              fontSize: "19px",
-              fontWeight: "900",
-              color: "#111827",
-            }}
-          >
-            Table 1. Weight Reduction Results
-          </h2>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={headerStyle}>Trial</th>
-                <th style={headerStyle}>Manual Mode (%)</th>
-                <th style={headerStyle}>Automatic Mode (%)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weightReductionRows.map((row) => (
-                <tr
-                  key={row.trial}
-                  style={row.trial === "Average" ? { background: "#f8fafc", fontWeight: "900" } : {}}
-                >
-                  <td style={cellStyle}>{row.trial}</td>
-                  <td style={cellStyle}>{row.manual.toFixed(2).replace(/\.00$/, "")}%</td>
-                  <td style={cellStyle}>{row.automatic.toFixed(2).replace(/\.00$/, "")}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <section style={{ ...sectionStyle, background: "#123b2b", color: "#ffffff", border: "none", padding: "22px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: "20px", fontWeight: "900", color: "#ffffff" }}>☀ SINAG-ANI</div>
+              <div style={{ fontSize: "13px", color: "#d1e7d9", marginTop: "5px" }}>IoT-Based Solar Fruit Drying System</div>
+            </div>
+            <div style={{ borderRadius: "999px", padding: "7px 12px", background: "#245b42", color: "#dcfce7", fontSize: "11px", fontWeight: "800" }}>RESEARCH OVERVIEW</div>
+          </div>
         </section>
 
-        <section style={{ ...cardStyle, padding: "24px", marginBottom: "18px", overflowX: "auto" }}>
-          <h2 style={{ margin: "0 0 18px", fontSize: "19px", fontWeight: "900", color: "#111827" }}>
-            Table 2. Temperature and Relative Humidity — Manual Mode
-          </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", marginBottom: "18px" }}>
+          <section style={{ ...sectionStyle, marginBottom: 0, padding: "20px" }}>
+            <div style={{ color: "#64748b", fontSize: "12px", fontWeight: "700" }}>MANUAL MODE AVERAGE</div>
+            <div style={{ fontSize: "30px", lineHeight: 1.2, fontWeight: "900", color: "#0f766e", marginTop: "8px" }}>{averageManual.toFixed(2)}%</div>
+            <div style={{ color: "#64748b", fontSize: "12px", marginTop: "5px" }}>Weight reduction</div>
+          </section>
+          <section style={{ ...sectionStyle, marginBottom: 0, padding: "20px" }}>
+            <div style={{ color: "#64748b", fontSize: "12px", fontWeight: "700" }}>AUTOMATIC MODE AVERAGE</div>
+            <div style={{ fontSize: "30px", lineHeight: 1.2, fontWeight: "900", color: "#2563eb", marginTop: "8px" }}>{averageAutomatic.toFixed(2)}%</div>
+            <div style={{ color: "#64748b", fontSize: "12px", marginTop: "5px" }}>Weight reduction</div>
+          </section>
+          <section style={{ ...sectionStyle, marginBottom: 0, padding: "20px" }}>
+            <div style={{ color: "#64748b", fontSize: "12px", fontWeight: "700" }}>HIGHEST RECORDED TEMPERATURE</div>
+            <div style={{ fontSize: "30px", lineHeight: 1.2, fontWeight: "900", color: "#b45309", marginTop: "8px" }}>39.01°C</div>
+            <div style={{ color: "#64748b", fontSize: "12px", marginTop: "5px" }}>Recorded during Manual Mode, Trial 2</div>
+          </section>
+        </div>
+
+        <section style={sectionStyle}>
+          <h2 style={headingStyle}>Table 1. Weight Reduction Results</h2>
           <table style={tableStyle}>
-            <thead><tr>
-              <th style={headerStyle}>Trial</th><th style={headerStyle}>Stage</th>
-              <th style={headerStyle}>Temperature After Stage (°C)</th>
-              <th style={headerStyle}>Highest Temperature (°C)</th>
-              <th style={headerStyle}>Relative Humidity (%)</th>
-            </tr></thead>
-            <tbody>{manualTemperatureRows.map((row) => (
-              <tr key={`${row.trial}-${row.stage}`}>
-                <td style={cellStyle}>{row.trial}</td><td style={cellStyle}>{row.stage}</td>
-                <td style={cellStyle}>{row.after.toFixed(2)}</td><td style={cellStyle}>{row.highest.toFixed(2)}</td>
-                <td style={cellStyle}>{row.humidity.toFixed(2)}</td>
+            <thead><tr><th style={headerStyle}>Trial</th><th style={headerStyle}>Manual Mode (%)</th><th style={headerStyle}>Automatic Mode (%)</th></tr></thead>
+            <tbody>{weightReductionRows.map((row) => (
+              <tr key={row.trial} style={row.trial === "Average" ? { background: "#f8fafc", fontWeight: 900 } : {}}>
+                <td style={cellStyle}>{row.trial}</td>
+                <td style={cellStyle}>{row.manual.toFixed(2).replace(/\.00$/, "")}%</td>
+                <td style={cellStyle}>{row.automatic.toFixed(2).replace(/\.00$/, "")}%</td>
               </tr>
             ))}</tbody>
           </table>
         </section>
 
-        <section style={{ ...cardStyle, padding: "24px", marginBottom: "18px", overflowX: "auto" }}>
-          <h2 style={{ margin: "0 0 18px", fontSize: "19px", fontWeight: "900", color: "#111827" }}>
-            Table 3. Temperature and Relative Humidity — Automatic Mode
-          </h2>
-          <table style={tableStyle}>
-            <thead><tr>
-              <th style={headerStyle}>Trial</th><th style={headerStyle}>Stage</th>
-              <th style={headerStyle}>Temperature After Stage (°C)</th>
-              <th style={headerStyle}>Highest Temperature (°C)</th>
-              <th style={headerStyle}>Relative Humidity (%)</th>
-            </tr></thead>
-            <tbody>{automaticTemperatureRows.map((row) => (
-              <tr key={`${row.trial}-${row.stage}`}>
-                <td style={cellStyle}>{row.trial}</td><td style={cellStyle}>{row.stage}</td>
-                <td style={cellStyle}>{row.after.toFixed(2)}</td><td style={cellStyle}>{row.highest.toFixed(2)}</td>
-                <td style={cellStyle}>{row.humidity.toFixed(2)}</td>
-              </tr>
-            ))}</tbody>
-          </table>
+        <section style={sectionStyle}>
+          <h2 style={headingStyle}>Table 2. Temperature and Relative Humidity — Manual Mode</h2>
+          {renderTemperatureTable(manualTemperatureRows)}
         </section>
 
-        <section
-          style={{
-            ...cardStyle,
-            padding: "24px",
-            marginBottom: "18px",
-            overflowX: "auto",
-          }}
-        >
-          <h2
-            style={{
-              margin: "0 0 18px",
-              fontSize: "19px",
-              fontWeight: "900",
-              color: "#111827",
-            }}
-          >
-            Table 3. Summary of Research Findings
-          </h2>
+        <section style={sectionStyle}>
+          <h2 style={headingStyle}>Table 3. Temperature and Relative Humidity — Automatic Mode</h2>
+          {renderTemperatureTable(automaticTemperatureRows)}
+        </section>
+
+        <section style={sectionStyle}>
+          <h2 style={headingStyle}>Table 4. Summary of Research Findings</h2>
           <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={headerStyle}>Parameter</th>
-                <th style={headerStyle}>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summaryRows.map((row) => (
-                <tr key={row.parameter}>
-                  <td style={cellStyle}>{row.parameter}</td>
-                  <td style={{ ...cellStyle, fontWeight: "700", color: "#111827" }}>
-                    {row.result}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            <thead><tr><th style={headerStyle}>Parameter</th><th style={headerStyle}>Result</th></tr></thead>
+            <tbody>{summaryRows.map((row) => (
+              <tr key={row.parameter}><td style={cellStyle}>{row.parameter}</td><td style={{ ...cellStyle, fontWeight: "700", color: "#111827" }}>{row.result}</td></tr>
+            ))}</tbody>
           </table>
-          <p
-            style={{
-              margin: "16px 0 0",
-              fontSize: "12px",
-              lineHeight: 1.6,
-              color: "#64748b",
-            }}
-          >
-            Note: The p-value of 0.341 is greater than the 0.05 significance level.
-            Therefore, the difference between manual and automatic modes is not
-            statistically significant at the 5% level.
+          <p style={{ margin: "14px 0 0", fontSize: "12px", lineHeight: 1.6, color: "#64748b" }}>
+            Note: The reported analysis found no statistically significant mode effect for temperature, highest temperature, or relative humidity. Relative humidity differed significantly by drying stage (p = 0.003, α = 0.05).
           </p>
         </section>
       </>
