@@ -51,49 +51,49 @@ const TOTAL_TIME = INITIAL_TIME + MAIN_TIME + FINAL_TIME;
 /* =========================================================
    DEFAULT RESEARCH RESULTS
 ========================================================= */
-
 const DEFAULT_RESULTS = {
   trials: [
     {
       trial: "Trial 1",
       fruit: "Banana",
       initialWeight: 100,
+      manualWeightReduction: 32,
+      automaticWeightReduction: 34,
       finalWeight: 68,
-      initialHumidity: 78,
-      finalHumidity: 58,
-      highestTemperature: 38.11,
-      finalTemperature: 36.12,
+      initialHumidity: "",
+      finalHumidity: "",
+      highestTemperature: 39.01,
+      finalTemperature: "",
       dryingTime: 5,
-      weather: "Sunny",
-      observation:
-        "The system operated successfully under sunny conditions and achieved noticeable weight reduction.",
+      weather: "",
+      observation: "",
       stages: {
         initial: {
           startingWeight: 100,
-          endingWeight: 83,
-          humidity: 51.11,
-          highestTemperature: 37,
-          finalTemperature: 36,
+          endingWeight: "",
+          humidity: "",
+          highestTemperature: "",
+          finalTemperature: "",
           fanPower: 100,
-          observation: "Initial moisture was reduced during high fan operation.",
+          observation: "",
         },
         main: {
-          startingWeight: 83,
-          endingWeight: 76,
-          humidity: 50.98,
-          highestTemperature: 38,
-          finalTemperature: 35,
+          startingWeight: "",
+          endingWeight: "",
+          humidity: "",
+          highestTemperature: "",
+          finalTemperature: "",
           fanPower: 75,
-          observation: "The sample continued to lose moisture under moderate-high airflow.",
+          observation: "",
         },
         final: {
-          startingWeight: 76,
-          endingWeight: 69,
-          humidity: 49.11,
-          highestTemperature: 39,
-          finalTemperature: 36,
+          startingWeight: "",
+          endingWeight: "",
+          humidity: "",
+          highestTemperature: "",
+          finalTemperature: "",
           fanPower: 50,
-          observation: "Final drying further reduced the sample weight.",
+          observation: "",
         },
       },
     },
@@ -101,15 +101,16 @@ const DEFAULT_RESULTS = {
       trial: "Trial 2",
       fruit: "Banana",
       initialWeight: 100,
+      manualWeightReduction: 31,
+      automaticWeightReduction: 32,
       finalWeight: 69,
       initialHumidity: "",
       finalHumidity: "",
       highestTemperature: "",
       finalTemperature: "",
       dryingTime: 5,
-      weather: "Sunny",
-      observation:
-        "The system completed the drying cycle and produced a consistent reduction in sample weight.",
+      weather: "",
+      observation: "",
       stages: {
         initial: {
           startingWeight: "",
@@ -144,6 +145,8 @@ const DEFAULT_RESULTS = {
       trial: "Trial 3",
       fruit: "Banana",
       initialWeight: 100,
+      manualWeightReduction: 25,
+      automaticWeightReduction: 30,
       finalWeight: 75,
       initialHumidity: "",
       finalHumidity: "",
@@ -151,8 +154,7 @@ const DEFAULT_RESULTS = {
       finalTemperature: "",
       dryingTime: 5,
       weather: "Cloudy/Rainy",
-      observation:
-        "Cloudy and rainy conditions were observed, which may have contributed to lower drying performance.",
+      observation: "",
       stages: {
         initial: {
           startingWeight: "",
@@ -186,21 +188,9 @@ const DEFAULT_RESULTS = {
   ],
 
   functionality: [
-    {
-      trial: "Trial 1",
-      functional: 7,
-      notFunctional: 2,
-    },
-    {
-      trial: "Trial 2",
-      functional: 9,
-      notFunctional: 0,
-    },
-    {
-      trial: "Trial 3",
-      functional: 9,
-      notFunctional: 0,
-    },
+    { trial: "Trial 1", functional: 7, notFunctional: 2 },
+    { trial: "Trial 2", functional: 9, notFunctional: 0 },
+    { trial: "Trial 3", functional: 9, notFunctional: 0 },
   ],
 
   monitoring: {
@@ -211,8 +201,16 @@ const DEFAULT_RESULTS = {
     firebaseSynchronization: "Functional",
   },
 
+  summary: {
+    initialWeight: 100,
+    averageManualReduction: 29.33,
+    averageAutomaticReduction: 32.00,
+    highestTemperature: 39.01,
+    pValue: 0.341,
+  },
+
   notes:
-    "The system demonstrated successful monitoring and drying operation. Environmental conditions affected the drying performance.",
+    "Automatic mode had a higher average weight reduction than manual mode. The p-value was 0.341.",
 };
 
 /* =========================================================
@@ -759,144 +757,29 @@ function App() {
      RESEARCH RESULT CALCULATIONS
   ======================================================= */
 
-  const calculatedTrialResults = useMemo(() => {
-    return researchResults.trials.map(
-      (trial) => ({
-        ...trial,
-        weightReduction:
-          calculateWeightReduction(
-            trial.initialWeight,
-            trial.finalWeight
-          ),
-      })
-    );
-  }, [researchResults.trials]);
+ 
+  const weightResults = [
+    { trial: "Trial 1", manual: 32, automatic: 34 },
+    { trial: "Trial 2", manual: 31, automatic: 32 },
+    { trial: "Trial 3", manual: 25, automatic: 30 },
+  ];
 
-  const weightReductions =
-    calculatedTrialResults
-      .map(
-        (trial) =>
-          trial.weightReduction
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
+  const averageManualReduction =
+    weightResults.reduce((sum, trial) => sum + trial.manual, 0) /
+    weightResults.length;
 
-  const averageWeightReduction =
-    weightReductions.length > 0
-      ? weightReductions.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        weightReductions.length
-      : null;
+  const averageAutomaticReduction =
+    weightResults.reduce((sum, trial) => sum + trial.automatic, 0) /
+    weightResults.length;
 
-  const highestTrialTemperatures =
-    calculatedTrialResults
-      .map((trial) =>
-        toNumber(
-          trial.highestTemperature
-        )
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
+  const researchSummary = {
+    initialWeight: 100,
+    averageManualReduction,
+    averageAutomaticReduction,
+    highestTemperature: 39.01,
+    pValue: 0.341,
+  };
 
-  const maximumTrialTemperature =
-    highestTrialTemperatures.length > 0
-      ? Math.max(
-          ...highestTrialTemperatures
-        )
-      : null;
-
-  const averageHighestTemperature =
-    highestTrialTemperatures.length > 0
-      ? highestTrialTemperatures.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        highestTrialTemperatures.length
-      : null;
-
-  const finalWeights =
-    calculatedTrialResults
-      .map((trial) =>
-        toNumber(
-          trial.finalWeight
-        )
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
-
-  const averageFinalWeight =
-    finalWeights.length > 0
-      ? finalWeights.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        finalWeights.length
-      : null;
-
-  const totalDryingTime =
-    calculatedTrialResults
-      .map((trial) =>
-        toNumber(
-          trial.dryingTime
-        )
-      )
-      .filter(
-        (value) =>
-          value !== null
-      );
-
-  const averageDryingTime =
-    totalDryingTime.length > 0
-      ? totalDryingTime.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        totalDryingTime.length
-      : null;
-
-  const functionalitySummary =
-    researchResults.functionality.reduce(
-      (summary, item) => {
-        summary.functional +=
-          Number(
-            item.functional
-          ) || 0;
-
-        summary.notFunctional +=
-          Number(
-            item.notFunctional
-          ) || 0;
-
-        return summary;
-      },
-      {
-        functional: 0,
-        notFunctional: 0,
-      }
-    );
-
-  const totalFunctionality =
-    functionalitySummary.functional +
-    functionalitySummary.notFunctional;
-
-  const overallFunctionality =
-    totalFunctionality > 0
-      ? (functionalitySummary.functional /
-          totalFunctionality) *
-        100
-      : null;
 
   /* =======================================================
      EDIT RESEARCH DATA
@@ -2266,183 +2149,219 @@ function App() {
   ======================================================= */
 
   const ResultsPage = () => {
-    const tableHeaderStyle = {
-      textAlign: "left",
-      padding: "12px 14px",
-      background: "#f1f5f9",
-      borderBottom: "1px solid #e2e8f0",
-      color: "#475569",
-      fontSize: "12px",
-      fontWeight: "800",
-      whiteSpace: "nowrap",
-    };
+    const manualResults = [32, 31, 25];
+    const automaticResults = [34, 32, 30];
 
-    const tableCellStyle = {
-      padding: "12px 14px",
-      borderBottom: "1px solid #f1f5f9",
-      fontSize: "13px",
-      color: "#1f2937",
-    };
+    const averageManual =
+      manualResults.reduce((sum, value) => sum + value, 0) /
+      manualResults.length;
+    const averageAutomatic =
+      automaticResults.reduce((sum, value) => sum + value, 0) /
+      automaticResults.length;
 
     const weightReductionRows = [
       { trial: "Trial 1", manual: 32, automatic: 34 },
       { trial: "Trial 2", manual: 31, automatic: 32 },
       { trial: "Trial 3", manual: 25, automatic: 30 },
-      { trial: "Average", manual: 29.33, automatic: 32.00 },
+      { trial: "Average", manual: averageManual, automatic: averageAutomatic },
+    ];
+
+    const manualTemperatureRows = [
+      { trial: "Trial 1", stage: "Initial", after: 36.80, highest: 38.01, humidity: 70.00 },
+      { trial: "Trial 1", stage: "Main", after: 36.50, highest: 37.98, humidity: 64.00 },
+      { trial: "Trial 1", stage: "Final", after: 35.67, highest: 38.11, humidity: 58.00 },
+      { trial: "Trial 2", stage: "Initial", after: 36.12, highest: 37.11, humidity: 61.00 },
+      { trial: "Trial 2", stage: "Main", after: 35.29, highest: 39.01, humidity: 51.00 },
+      { trial: "Trial 2", stage: "Final", after: 35.12, highest: 38.12, humidity: 49.00 },
+      { trial: "Trial 3", stage: "Initial", after: 28.56, highest: 30.11, humidity: 85.00 },
+      { trial: "Trial 3", stage: "Main", after: 29.63, highest: 29.93, humidity: 68.20 },
+      { trial: "Trial 3", stage: "Final", after: 27.12, highest: 28.81, humidity: 85.00 },
+    ];
+    const automaticTemperatureRows = [
+      { trial: "Trial 1", stage: "Initial", after: 35.20, highest: 37.12, humidity: 78.00 },
+      { trial: "Trial 1", stage: "Main", after: 36.20, highest: 37.01, humidity: 65.00 },
+      { trial: "Trial 1", stage: "Final", after: 35.67, highest: 38.11, humidity: 54.00 },
+      { trial: "Trial 2", stage: "Initial", after: 35.15, highest: 37.01, humidity: 68.00 },
+      { trial: "Trial 2", stage: "Main", after: 34.18, highest: 38.11, humidity: 56.00 },
+      { trial: "Trial 2", stage: "Final", after: 35.28, highest: 36.98, humidity: 51.00 },
+      { trial: "Trial 3", stage: "Initial", after: 35.56, highest: 37.15, humidity: 75.00 },
+      { trial: "Trial 3", stage: "Main", after: 35.63, highest: 36.12, humidity: 68.20 },
+      { trial: "Trial 3", stage: "Final", after: 34.15, highest: 37.01, humidity: 59.00 },
     ];
 
     const summaryRows = [
       { parameter: "Initial sample weight", result: "100 g" },
       {
         parameter: "Average weight reduction — Manual Mode",
-        result: "29.33%",
+        result: `${averageManual.toFixed(2)}%`,
       },
       {
         parameter: "Average weight reduction — Automatic Mode",
-        result: "32.00%",
+        result: `${averageAutomatic.toFixed(2)}%`,
       },
       { parameter: "Highest recorded temperature", result: "39.01°C" },
       { parameter: "Statistical significance (p-value)", result: "0.341" },
     ];
 
+    const tableStyle = {
+      width: "100%",
+      borderCollapse: "collapse",
+      textAlign: "left",
+    };
+    const headerStyle = {
+      padding: "14px 16px",
+      background: "#f1f5f9",
+      color: "#475569",
+      borderBottom: "1px solid #e2e8f0",
+      fontSize: "12px",
+      fontWeight: "800",
+      whiteSpace: "nowrap",
+    };
+    const cellStyle = {
+      padding: "14px 16px",
+      borderBottom: "1px solid #e2e8f0",
+      color: "#334155",
+      fontSize: "13px",
+    };
+
     return (
       <>
         <PageHeader
           title="Research Results"
-          subtitle="Comparison of manual and automatic drying modes and summary of research findings"
+          subtitle="Comparison of manual and automatic drying modes and summary of findings"
         />
 
-        {/* TABLE 1: WEIGHT REDUCTION RESULTS */}
         <section
           style={{
             ...cardStyle,
             padding: "24px",
-            marginBottom: "16px",
+            marginBottom: "18px",
             overflowX: "auto",
           }}
         >
-          <div
+          <h2
             style={{
-              fontSize: "11px",
-              fontWeight: "800",
-              letterSpacing: "1px",
-              color: "#64748b",
-              marginBottom: "5px",
+              margin: "0 0 18px",
+              fontSize: "19px",
+              fontWeight: "900",
+              color: "#111827",
             }}
           >
-            TABLE 1
-          </div>
-          <h2 style={{ margin: "0 0 18px", fontSize: "20px" }}>
-            Weight Reduction Results
+            Table 1. Weight Reduction Results
           </h2>
-
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              minWidth: "480px",
-            }}
-          >
+          <table style={tableStyle}>
             <thead>
               <tr>
-                {["Trial", "Manual Mode (%)", "Automatic Mode (%)"].map(
-                  (header) => (
-                    <th key={header} style={tableHeaderStyle}>
-                      {header}
-                    </th>
-                  )
-                )}
+                <th style={headerStyle}>Trial</th>
+                <th style={headerStyle}>Manual Mode (%)</th>
+                <th style={headerStyle}>Automatic Mode (%)</th>
               </tr>
             </thead>
             <tbody>
-              {weightReductionRows.map((row) => {
-                const isAverage = row.trial === "Average";
-                return (
-                  <tr
-                    key={row.trial}
-                    style={{ background: isAverage ? "#f8fafc" : "#ffffff" }}
-                  >
-                    <td
-                      style={{
-                        ...tableCellStyle,
-                        fontWeight: isAverage ? "900" : "700",
-                      }}
-                    >
-                      {row.trial}
-                    </td>
-                    <td
-                      style={{
-                        ...tableCellStyle,
-                        fontWeight: isAverage ? "900" : "500",
-                      }}
-                    >
-                      {row.manual.toFixed(2).replace(/\.00$/, "")}%
-                    </td>
-                    <td
-                      style={{
-                        ...tableCellStyle,
-                        fontWeight: isAverage ? "900" : "500",
-                      }}
-                    >
-                      {row.automatic.toFixed(2).replace(/\.00$/, "")}%
-                    </td>
-                  </tr>
-                );
-              })}
+              {weightReductionRows.map((row) => (
+                <tr
+                  key={row.trial}
+                  style={row.trial === "Average" ? { background: "#f8fafc", fontWeight: "900" } : {}}
+                >
+                  <td style={cellStyle}>{row.trial}</td>
+                  <td style={cellStyle}>{row.manual.toFixed(2).replace(/\.00$/, "")}%</td>
+                  <td style={cellStyle}>{row.automatic.toFixed(2).replace(/\.00$/, "")}%</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </section>
 
-        {/* TABLE 2: SUMMARY OF RESEARCH FINDINGS */}
+        <section style={{ ...cardStyle, padding: "24px", marginBottom: "18px", overflowX: "auto" }}>
+          <h2 style={{ margin: "0 0 18px", fontSize: "19px", fontWeight: "900", color: "#111827" }}>
+            Table 2. Temperature and Relative Humidity — Manual Mode
+          </h2>
+          <table style={tableStyle}>
+            <thead><tr>
+              <th style={headerStyle}>Trial</th><th style={headerStyle}>Stage</th>
+              <th style={headerStyle}>Temperature After Stage (°C)</th>
+              <th style={headerStyle}>Highest Temperature (°C)</th>
+              <th style={headerStyle}>Relative Humidity (%)</th>
+            </tr></thead>
+            <tbody>{manualTemperatureRows.map((row) => (
+              <tr key={`${row.trial}-${row.stage}`}>
+                <td style={cellStyle}>{row.trial}</td><td style={cellStyle}>{row.stage}</td>
+                <td style={cellStyle}>{row.after.toFixed(2)}</td><td style={cellStyle}>{row.highest.toFixed(2)}</td>
+                <td style={cellStyle}>{row.humidity.toFixed(2)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </section>
+
+        <section style={{ ...cardStyle, padding: "24px", marginBottom: "18px", overflowX: "auto" }}>
+          <h2 style={{ margin: "0 0 18px", fontSize: "19px", fontWeight: "900", color: "#111827" }}>
+            Table 3. Temperature and Relative Humidity — Automatic Mode
+          </h2>
+          <table style={tableStyle}>
+            <thead><tr>
+              <th style={headerStyle}>Trial</th><th style={headerStyle}>Stage</th>
+              <th style={headerStyle}>Temperature After Stage (°C)</th>
+              <th style={headerStyle}>Highest Temperature (°C)</th>
+              <th style={headerStyle}>Relative Humidity (%)</th>
+            </tr></thead>
+            <tbody>{automaticTemperatureRows.map((row) => (
+              <tr key={`${row.trial}-${row.stage}`}>
+                <td style={cellStyle}>{row.trial}</td><td style={cellStyle}>{row.stage}</td>
+                <td style={cellStyle}>{row.after.toFixed(2)}</td><td style={cellStyle}>{row.highest.toFixed(2)}</td>
+                <td style={cellStyle}>{row.humidity.toFixed(2)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </section>
+
         <section
           style={{
             ...cardStyle,
             padding: "24px",
+            marginBottom: "18px",
             overflowX: "auto",
           }}
         >
-          <div
+          <h2
             style={{
-              fontSize: "11px",
-              fontWeight: "800",
-              letterSpacing: "1px",
-              color: "#64748b",
-              marginBottom: "5px",
+              margin: "0 0 18px",
+              fontSize: "19px",
+              fontWeight: "900",
+              color: "#111827",
             }}
           >
-            TABLE 2
-          </div>
-          <h2 style={{ margin: "0 0 18px", fontSize: "20px" }}>
-            Summary of Research Findings
+            Table 3. Summary of Research Findings
           </h2>
-
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              minWidth: "420px",
-            }}
-          >
+          <table style={tableStyle}>
             <thead>
               <tr>
-                {["Parameter", "Result"].map((header) => (
-                  <th key={header} style={tableHeaderStyle}>
-                    {header}
-                  </th>
-                ))}
+                <th style={headerStyle}>Parameter</th>
+                <th style={headerStyle}>Result</th>
               </tr>
             </thead>
             <tbody>
               {summaryRows.map((row) => (
                 <tr key={row.parameter}>
-                  <td style={tableCellStyle}>{row.parameter}</td>
-                  <td style={{ ...tableCellStyle, fontWeight: "800" }}>
+                  <td style={cellStyle}>{row.parameter}</td>
+                  <td style={{ ...cellStyle, fontWeight: "700", color: "#111827" }}>
                     {row.result}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <p
+            style={{
+              margin: "16px 0 0",
+              fontSize: "12px",
+              lineHeight: 1.6,
+              color: "#64748b",
+            }}
+          >
+            Note: The p-value of 0.341 is greater than the 0.05 significance level.
+            Therefore, the difference between manual and automatic modes is not
+            statistically significant at the 5% level.
+          </p>
         </section>
       </>
     );
